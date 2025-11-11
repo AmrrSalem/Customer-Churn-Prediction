@@ -69,9 +69,14 @@ def engineer_features(df: pd.DataFrame):
         ).astype(str)
 
     # Total charges per month ratio (efficiency metric)
-    if "TotalCharges" in df.columns and "MonthlyCharges" in df.columns:
-        df["charges_per_tenure"] = df["TotalCharges"] / (df["tenure"] + 1)  # +1 to avoid division by zero
+    if "TotalCharges" in df.columns and "MonthlyCharges" in df.columns and "tenure" in df.columns:
+        # Use .where to handle potential NaN values gracefully
+        df["charges_per_tenure"] = df["TotalCharges"] / (df["tenure"] + 1)
         df["monthly_to_total_ratio"] = df["MonthlyCharges"] / (df["TotalCharges"] + 1)
+
+        # Replace any inf/NaN values with 0
+        df["charges_per_tenure"] = df["charges_per_tenure"].replace([float('inf'), -float('inf')], 0).fillna(0)
+        df["monthly_to_total_ratio"] = df["monthly_to_total_ratio"].replace([float('inf'), -float('inf')], 0).fillna(0)
 
     # Service combinations (interaction features)
     if "InternetService" in df.columns and "PhoneService" in df.columns:
