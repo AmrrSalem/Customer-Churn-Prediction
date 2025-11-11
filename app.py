@@ -141,9 +141,9 @@ def train_models(X_train, X_test, y_train, y_test, params):
 
     if "Random Forest" in params["models"]:
         rf = RandomForestClassifier(
-            n_estimators=params["rf_n_estimators"],
-            max_depth=params["rf_max_depth"] if params["rf_max_depth"] > 0 else None,
-            min_samples_split=2,
+            n_estimators=params.get("rf_n_estimators", 200),
+            max_depth=params.get("rf_max_depth", 10) if params.get("rf_max_depth", 10) > 0 else None,
+            min_samples_split=params.get("rf_min_samples_split", 2),
             random_state=42,
         )
         rf.fit(X_train, y_train)
@@ -151,16 +151,21 @@ def train_models(X_train, X_test, y_train, y_test, params):
         models["Random Forest"] = (rf, proba)
 
     if "Logistic Regression" in params["models"]:
-        lr = LogisticRegression(max_iter=1000, random_state=42)
+        lr = LogisticRegression(
+            C=params.get("lr_C", 1.0),
+            max_iter=params.get("lr_max_iter", 1000),
+            solver=params.get("lr_solver", "lbfgs"),
+            random_state=42
+        )
         lr.fit(params["scaler"].transform(X_train), y_train)
         proba = lr.predict_proba(params["scaler"].transform(X_test))[:, 1]
         models["Logistic Regression"] = (lr, proba)
 
     if "XGBoost" in params["models"]:
         xgb_model = xgb.XGBClassifier(
-            n_estimators=200,
-            max_depth=6,
-            learning_rate=0.1,
+            n_estimators=params.get("xgb_n_estimators", 200),
+            max_depth=params.get("xgb_max_depth", 6),
+            learning_rate=params.get("xgb_learning_rate", 0.1),
             random_state=42,
             eval_metric='logloss'
         )
@@ -170,9 +175,9 @@ def train_models(X_train, X_test, y_train, y_test, params):
 
     if "LightGBM" in params["models"]:
         lgb_model = lgb.LGBMClassifier(
-            n_estimators=200,
-            max_depth=6,
-            learning_rate=0.1,
+            n_estimators=params.get("lgb_n_estimators", 200),
+            max_depth=params.get("lgb_max_depth", 6),
+            learning_rate=params.get("lgb_learning_rate", 0.1),
             random_state=42,
             verbose=-1
         )
@@ -182,9 +187,9 @@ def train_models(X_train, X_test, y_train, y_test, params):
 
     if "CatBoost" in params["models"]:
         cat_model = CatBoostClassifier(
-            iterations=200,
-            depth=6,
-            learning_rate=0.1,
+            iterations=params.get("cat_iterations", 200),
+            depth=params.get("cat_depth", 6),
+            learning_rate=params.get("cat_learning_rate", 0.1),
             random_state=42,
             verbose=0
         )
@@ -194,9 +199,9 @@ def train_models(X_train, X_test, y_train, y_test, params):
 
     if "Gradient Boosting" in params["models"]:
         gb_model = GradientBoostingClassifier(
-            n_estimators=200,
-            max_depth=6,
-            learning_rate=0.1,
+            n_estimators=params.get("gb_n_estimators", 200),
+            max_depth=params.get("gb_max_depth", 6),
+            learning_rate=params.get("gb_learning_rate", 0.1),
             random_state=42
         )
         gb_model.fit(X_train, y_train)
@@ -205,8 +210,8 @@ def train_models(X_train, X_test, y_train, y_test, params):
 
     if "AdaBoost" in params["models"]:
         ada_model = AdaBoostClassifier(
-            n_estimators=200,
-            learning_rate=1.0,
+            n_estimators=params.get("ada_n_estimators", 200),
+            learning_rate=params.get("ada_learning_rate", 1.0),
             random_state=42
         )
         ada_model.fit(X_train, y_train)
@@ -328,9 +333,87 @@ with st.sidebar:
         default=["Random Forest", "XGBoost", "LightGBM"]
     )
 
-    st.subheader("Random Forest params")
-    rf_n_estimators = st.slider("n_estimators", 50, 400, 200, 50)
-    rf_max_depth = st.slider("max_depth (0 = None)", 0, 30, 10, 1)
+    # Dynamic hyperparameters based on selected models
+    model_params = {}
+
+    if choose_models:
+        st.header("⚙️ Hyperparameters")
+
+        for model_name in choose_models:
+            with st.expander(f"{model_name} Parameters", expanded=False):
+                if model_name == "Random Forest":
+                    model_params["rf_n_estimators"] = st.slider(
+                        "n_estimators", 50, 500, 200, 50, key="rf_n_est"
+                    )
+                    model_params["rf_max_depth"] = st.slider(
+                        "max_depth (0 = None)", 0, 30, 10, 1, key="rf_depth"
+                    )
+                    model_params["rf_min_samples_split"] = st.slider(
+                        "min_samples_split", 2, 20, 2, 1, key="rf_min_split"
+                    )
+
+                elif model_name == "Logistic Regression":
+                    model_params["lr_C"] = st.slider(
+                        "C (Inverse regularization)", 0.01, 10.0, 1.0, 0.1, key="lr_c"
+                    )
+                    model_params["lr_max_iter"] = st.slider(
+                        "max_iter", 100, 2000, 1000, 100, key="lr_iter"
+                    )
+                    model_params["lr_solver"] = st.selectbox(
+                        "solver", ["lbfgs", "liblinear", "saga"], key="lr_solver"
+                    )
+
+                elif model_name == "XGBoost":
+                    model_params["xgb_n_estimators"] = st.slider(
+                        "n_estimators", 50, 500, 200, 50, key="xgb_n_est"
+                    )
+                    model_params["xgb_max_depth"] = st.slider(
+                        "max_depth", 3, 15, 6, 1, key="xgb_depth"
+                    )
+                    model_params["xgb_learning_rate"] = st.slider(
+                        "learning_rate", 0.01, 0.3, 0.1, 0.01, key="xgb_lr"
+                    )
+
+                elif model_name == "LightGBM":
+                    model_params["lgb_n_estimators"] = st.slider(
+                        "n_estimators", 50, 500, 200, 50, key="lgb_n_est"
+                    )
+                    model_params["lgb_max_depth"] = st.slider(
+                        "max_depth", 3, 15, 6, 1, key="lgb_depth"
+                    )
+                    model_params["lgb_learning_rate"] = st.slider(
+                        "learning_rate", 0.01, 0.3, 0.1, 0.01, key="lgb_lr"
+                    )
+
+                elif model_name == "CatBoost":
+                    model_params["cat_iterations"] = st.slider(
+                        "iterations", 50, 500, 200, 50, key="cat_iter"
+                    )
+                    model_params["cat_depth"] = st.slider(
+                        "depth", 3, 10, 6, 1, key="cat_depth"
+                    )
+                    model_params["cat_learning_rate"] = st.slider(
+                        "learning_rate", 0.01, 0.3, 0.1, 0.01, key="cat_lr"
+                    )
+
+                elif model_name == "Gradient Boosting":
+                    model_params["gb_n_estimators"] = st.slider(
+                        "n_estimators", 50, 500, 200, 50, key="gb_n_est"
+                    )
+                    model_params["gb_max_depth"] = st.slider(
+                        "max_depth", 3, 15, 6, 1, key="gb_depth"
+                    )
+                    model_params["gb_learning_rate"] = st.slider(
+                        "learning_rate", 0.01, 0.3, 0.1, 0.01, key="gb_lr"
+                    )
+
+                elif model_name == "AdaBoost":
+                    model_params["ada_n_estimators"] = st.slider(
+                        "n_estimators", 50, 500, 200, 50, key="ada_n_est"
+                    )
+                    model_params["ada_learning_rate"] = st.slider(
+                        "learning_rate", 0.1, 2.0, 1.0, 0.1, key="ada_lr"
+                    )
 
     st.header("Decision Threshold")
     threshold = st.slider("Threshold for classification", 0.1, 0.9, 0.5, 0.01)
@@ -388,12 +471,12 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, r
 
 scaler = StandardScaler().fit(X_train)
 
+# Merge model parameters with other params
 params = {
     "models": choose_models,
-    "rf_n_estimators": rf_n_estimators,
-    "rf_max_depth": rf_max_depth,
     "scaler": scaler,
 }
+params.update(model_params)  # Add all dynamic model parameters
 
 if run_btn:
     metrics = train_models(X_train, X_test, y_train, y_test, params)
