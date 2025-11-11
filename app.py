@@ -3,6 +3,7 @@
 """
 Streamlit App: Telco Customer Churn (Interactive)
 -------------------------------------------------
+Enhanced with 7 ML models and advanced feature engineering
 Run locally:
     streamlit run app.py
 """
