@@ -648,10 +648,18 @@ h1 {
     margin-bottom:.2rem !important;
 }
 
-/* ── Section headers ── */
+/* ── Section headers (main content only) ── */
 h2 { color:#e2e6f3 !important; font-size:1.3rem !important; font-weight:700 !important;
      border-left:3px solid #667eea; padding-left:.6rem; margin-top:1.4rem !important; }
 h3 { color:#c8cde0 !important; font-size:1.05rem !important; font-weight:600 !important; }
+
+/* ── Remove border from sidebar headers ── */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    border-left: none !important;
+    padding-left: 0 !important;
+}
 
 /* ── Metric cards ── */
 [data-testid="metric-container"] {
