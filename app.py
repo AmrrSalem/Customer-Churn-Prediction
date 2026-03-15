@@ -29,6 +29,12 @@ try:
 except ImportError:
     _SUPABASE_AVAILABLE = False
 
+try:
+    import shap as _shap
+    _SHAP_AVAILABLE = True
+except ImportError:
+    _SHAP_AVAILABLE = False
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -346,6 +352,39 @@ def send_alert_email(high_risk_df, recipient, smtp_cfg, client_name, threshold):
         s.sendmail(smtp_cfg["user"], recipient, msg.as_string())
 
 
+# ── Prescriptive action rules ─────────────────────────────────────────────────
+def recommend_action(customer_id, prob, risk_level, df_raw, id_col):
+    """Rule-based action recommendation enriched with original feature data."""
+    contract, tenure = "", 0
+    if df_raw is not None and id_col and id_col in df_raw.columns:
+        row = df_raw[df_raw[id_col].astype(str) == str(customer_id)]
+        if not row.empty:
+            r = row.iloc[0]
+            contract = str(r.get("Contract", r.get("contract", ""))).lower()
+            tenure   = float(r.get("tenure", r.get("Years", r.get("years", 0))) or 0)
+
+    if risk_level == "Low Risk":
+        return "Monitor — schedule quarterly check-in"
+
+    if risk_level == "Medium Risk":
+        if tenure < 12:
+            return "New customer at risk — assign onboarding support"
+        return "Send personalised retention offer via email"
+
+    # High Risk
+    if "month" in contract or contract in ("", "nan"):
+        if prob >= 0.70:
+            return "Urgent: escalate to account manager + offer annual plan (20% off)"
+        return "Offer annual plan upgrade with incentive"
+    if "one" in contract:
+        return "Offer two-year renewal with loyalty discount"
+    if tenure < 12:
+        return "High-risk new customer — dedicated success manager"
+    if prob >= 0.70:
+        return "Urgent: offer retention package + executive call"
+    return "Proactive outreach — loyalty reward or service upgrade"
+
+
 # ── Chart helpers ─────────────────────────────────────────────────────────────
 def plot_confusion(cm, labels=("Retained", "Churned")):
     z = np.array(cm)
@@ -377,6 +416,57 @@ def plot_pr_comparison(metrics, y_test):
     fig.update_layout(title="Precision-Recall Comparison",
                       xaxis_title="Recall", yaxis_title="Precision",
                       height=450, margin=dict(l=40,r=40,t=60,b=40))
+    return fig
+
+
+def get_shap_explainer(model, model_name, X_background):
+    """Return a SHAP explainer appropriate for the model type."""
+    if not _SHAP_AVAILABLE:
+        return None
+    try:
+        if model_name == "Logistic Regression":
+            return _shap.LinearExplainer(model, X_background)
+        return _shap.TreeExplainer(model)
+    except Exception:
+        try:
+            bg = _shap.sample(X_background, min(50, len(X_background)))
+            return _shap.KernelExplainer(model.predict_proba, bg)
+        except Exception:
+            return None
+
+
+def shap_values_class1(explainer, X, model_name):
+    """Extract SHAP values for the positive class."""
+    sv = explainer.shap_values(X)
+    if isinstance(sv, list):   # tree models return [class0, class1]
+        return sv[1]
+    return sv                  # linear / kernel return single array
+
+
+def plot_shap_bar(mean_abs_shap, feature_names, title="Global Feature Impact (SHAP)"):
+    df_s = pd.DataFrame({"feature": feature_names,
+                          "importance": mean_abs_shap}
+                        ).sort_values("importance").tail(20)
+    fig = px.bar(df_s, x="importance", y="feature", orientation="h",
+                 title=title, color="importance", color_continuous_scale="Reds")
+    fig.update_layout(height=500, coloraxis_showscale=False,
+                      margin=dict(l=10, r=10, t=50, b=10))
+    return fig
+
+
+def plot_shap_waterfall(shap_vals_row, feature_names, base_value, customer_id):
+    """Plotly waterfall for a single customer's SHAP values."""
+    sv   = shap_vals_row
+    idx  = np.argsort(np.abs(sv))[-12:]          # top 12 features
+    vals = sv[idx]
+    feats = [feature_names[i] for i in idx]
+    colors = ["#d62728" if v > 0 else "#2ca02c" for v in vals]
+    fig = go.Figure(go.Bar(x=vals, y=feats, orientation="h",
+                           marker_color=colors))
+    fig.update_layout(
+        title=f"SHAP Explanation — Customer: {customer_id}",
+        xaxis_title="SHAP value (impact on churn probability)",
+        height=420, margin=dict(l=10, r=10, t=50, b=10))
     return fig
 
 
@@ -452,8 +542,9 @@ with st.sidebar:
     st.header("Run")
     run_btn = st.button("Run Training", type="primary")
 
-# ── Three product tabs ────────────────────────────────────────────────────────
-tab_train, tab_score, tab_alert = st.tabs(["Train Model", "Score New Customers", "Email Alert"])
+# ── Four product tabs ─────────────────────────────────────────────────────────
+tab_train, tab_score, tab_alert, tab_explain = st.tabs(
+    ["Train Model", "Score New Customers", "Email Alert", "Explain (SHAP)"])
 
 # ════════════════════════════════
 #  TAB 1 — TRAIN
@@ -593,6 +684,46 @@ with tab_train:
         kpi[2].metric("FN (missed)", fn)
         kpi[3].metric("Net benefit ($)", f"{net:,.0f}")
 
+        # ── Cohort / Time-series view ─────────────────────────────────────────
+        date_col_cands = [c for c in df.columns
+                          if any(kw in c.lower() for kw in
+                                 ["date","time","month","year","period","signup","join"])]
+        if date_col_cands:
+            st.markdown("---")
+            st.markdown("## Cohort Analysis")
+            dc = st.selectbox("Date column", date_col_cands, key="cohort_date_col")
+            df_coh = df.copy()
+            df_coh["_date"] = pd.to_datetime(df_coh[dc], errors="coerce")
+            df_coh = df_coh.dropna(subset=["_date"])
+            if len(df_coh) > 10:
+                df_coh["_month"] = df_coh["_date"].dt.to_period("M").astype(str)
+                churn_val = df_coh[target_col].value_counts().index[-1]  # minority = churn
+                monthly = (df_coh.groupby("_month")
+                           .apply(lambda g: pd.Series({
+                               "total":   len(g),
+                               "churned": (g[target_col] == churn_val).sum()}))
+                           .reset_index())
+                monthly["churn_rate"] = monthly["churned"] / monthly["total"]
+                fig_coh = px.line(monthly, x="_month", y="churn_rate",
+                                  markers=True, title="Monthly Churn Rate Over Time",
+                                  labels={"_month": "Month", "churn_rate": "Churn Rate"})
+                fig_coh.update_yaxes(tickformat=".0%")
+                fig_coh.update_layout(height=380, margin=dict(l=10,r=10,t=50,b=10))
+                st.plotly_chart(fig_coh, use_container_width=True)
+
+                # Cohort retention table
+                df_coh["_cohort"] = df_coh["_date"].dt.to_period("Q").astype(str)
+                cohort_stats = (df_coh.groupby("_cohort")
+                                .apply(lambda g: pd.Series({
+                                    "Customers": len(g),
+                                    "Churned":   (g[target_col] == churn_val).sum(),
+                                    "Churn Rate": f"{(g[target_col]==churn_val).mean():.1%}"}))
+                                .reset_index().rename(columns={"_cohort": "Cohort"}))
+                st.markdown("#### Quarterly Cohort Summary")
+                st.dataframe(cohort_stats, use_container_width=True, hide_index=True)
+            else:
+                st.caption("Not enough rows with valid dates for cohort analysis.")
+
         # ── Save model bundle ─────────────────────────────────────────────────
         st.markdown("---")
         st.markdown("## Save Model")
@@ -613,6 +744,10 @@ with tab_train:
             },
         }
         st.session_state["model_bundle"] = bundle
+        # Save training sample for SHAP global analysis
+        shap_sample = X_train.sample(min(200, len(X_train)), random_state=42)
+        st.session_state["X_train_shap"]  = shap_sample
+        st.session_state["train_df_raw"]  = df          # for cohort view
 
         buf = io.BytesIO()
         pickle.dump(bundle, buf)
@@ -759,16 +894,24 @@ with tab_score:
     else:
         probas = model.predict_proba(X_new)[:, 1]
 
+    risk_labels = np.where(probas >= score_thr, "High Risk",
+                           np.where(probas >= score_thr * 0.6, "Medium Risk", "Low Risk"))
+    actions = [recommend_action(cid, p, r, df_new, bundle.get("id_col"))
+               for cid, p, r in zip(ids, probas, risk_labels)]
+
     results = pd.DataFrame({
-        "Customer ID":    ids,
-        "Churn Probability": probas,
-        "Risk Level": np.where(probas >= score_thr, "High Risk",
-                      np.where(probas >= score_thr * 0.6, "Medium Risk", "Low Risk")),
+        "Customer ID":        ids,
+        "Churn Probability":  probas,
+        "Risk Level":         risk_labels,
+        "Recommended Action": actions,
     }).sort_values("Churn Probability", ascending=False).reset_index(drop=True)
 
-    # Save to session for Alert tab
-    st.session_state["score_results"] = results
+    # Save to session for Alert tab + Explain tab
+    st.session_state["score_results"]   = results
     st.session_state["score_threshold"] = score_thr
+    st.session_state["X_scored"]        = X_new
+    st.session_state["score_ids"]       = ids
+    st.session_state["df_scored_raw"]   = df_new
 
     # KPIs
     high  = (results["Risk Level"] == "High Risk").sum()
@@ -887,3 +1030,103 @@ with tab_alert:
         {rows_html}</body></html>"""
         st.download_button("Download Alert as HTML", html_export,
                             file_name="churn_alert.html", mime="text/html")
+
+# ════════════════════════════════
+#  TAB 4 — EXPLAIN (SHAP)
+# ════════════════════════════════
+with tab_explain:
+    st.subheader("Explain Predictions with SHAP")
+
+    if not _SHAP_AVAILABLE:
+        st.error("SHAP is not installed. Add `shap>=0.44` to requirements.txt and redeploy.")
+        st.stop()
+
+    bundle = st.session_state.get("model_bundle")
+    if not bundle:
+        st.info("Train a model first on the **Train Model** tab.")
+        st.stop()
+
+    model      = bundle["model"]
+    model_name = bundle["model_name"]
+    feat_cols  = bundle["feature_cols"]
+
+    # ── Global SHAP ────────────────────────────────────────────────────────────
+    X_bg = st.session_state.get("X_train_shap")
+    if X_bg is None:
+        st.info("Retrain the model to enable SHAP analysis (training data needed for background).")
+        st.stop()
+
+    if model_name == "Logistic Regression":
+        X_bg_scaled = bundle["scaler"].transform(X_bg)
+        X_bg_for_explainer = pd.DataFrame(X_bg_scaled, columns=feat_cols)
+    else:
+        X_bg_for_explainer = X_bg
+
+    with st.spinner("Computing SHAP values…"):
+        explainer = get_shap_explainer(model, model_name, X_bg_for_explainer)
+        if explainer is None:
+            st.error("Could not create SHAP explainer for this model type.")
+            st.stop()
+        sv_global = shap_values_class1(explainer, X_bg_for_explainer, model_name)
+
+    mean_shap = np.abs(sv_global).mean(axis=0)
+    st.plotly_chart(plot_shap_bar(mean_shap, feat_cols,
+                                   f"Global Feature Impact — {model_name}"),
+                    use_container_width=True)
+    st.caption("Mean |SHAP value| across training sample. Higher = more influential feature.")
+
+    # ── Per-customer waterfall ─────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("### Individual Customer Explanation")
+
+    X_scored = st.session_state.get("X_scored")
+    score_ids = st.session_state.get("score_ids")
+    results_ex = st.session_state.get("score_results")
+
+    if X_scored is None or score_ids is None:
+        st.info("Score customers on the **Score New Customers** tab to enable individual explanations.")
+    else:
+        if model_name == "Logistic Regression":
+            X_sc_exp = pd.DataFrame(bundle["scaler"].transform(X_scored), columns=feat_cols)
+        else:
+            X_sc_exp = X_scored
+
+        id_options = [str(i) for i in score_ids]
+        sel_id = st.selectbox("Select customer to explain", id_options, key="explain_customer")
+        sel_idx = id_options.index(sel_id)
+
+        sv_row = shap_values_class1(explainer, X_sc_exp.iloc[[sel_idx]], model_name)
+        if sv_row.ndim == 2:
+            sv_row = sv_row[0]
+
+        prob_row = (results_ex[results_ex["Customer ID"].astype(str) == sel_id]
+                    ["Churn Probability"].values)
+        prob_str = f"{prob_row[0]:.1%}" if len(prob_row) else "—"
+
+        risk_row = (results_ex[results_ex["Customer ID"].astype(str) == sel_id]
+                    ["Risk Level"].values)
+        action_row = (results_ex[results_ex["Customer ID"].astype(str) == sel_id]
+                      ["Recommended Action"].values)
+
+        ec1, ec2, ec3 = st.columns(3)
+        ec1.metric("Customer", sel_id)
+        ec2.metric("Churn Probability", prob_str)
+        if len(risk_row):
+            ec3.metric("Risk Level", risk_row[0])
+
+        if len(action_row):
+            color = "#d62728" if "Urgent" in action_row[0] else "#ff7f0e" if risk_row[0] == "Medium Risk" else "#2ca02c"
+            st.markdown(f"**Recommended Action:** "
+                        f"<span style='color:{color}'>{action_row[0]}</span>",
+                        unsafe_allow_html=True)
+
+        try:
+            base_val = explainer.expected_value
+            if isinstance(base_val, (list, np.ndarray)):
+                base_val = base_val[1]
+        except Exception:
+            base_val = 0.0
+
+        st.plotly_chart(plot_shap_waterfall(sv_row, feat_cols, base_val, sel_id),
+                        use_container_width=True)
+        st.caption("Red bars push churn probability UP. Green bars push it DOWN.")
