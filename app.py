@@ -23,6 +23,12 @@ from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+try:
+    from supabase import create_client as _sb_create
+    _SUPABASE_AVAILABLE = True
+except ImportError:
+    _SUPABASE_AVAILABLE = False
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -54,6 +60,77 @@ def _s(key, default=""):
         return st.secrets.get(key, default)
     except Exception:
         return default
+
+
+# ── Supabase Storage ──────────────────────────────────────────────────────────
+@st.cache_resource(show_spinner=False)
+def _get_supabase():
+    if not _SUPABASE_AVAILABLE:
+        return None
+    url = _s("SUPABASE_URL")
+    key = _s("SUPABASE_KEY")
+    if not url or not key:
+        return None
+    try:
+        return _sb_create(url, key)
+    except Exception:
+        return None
+
+def _sb_bucket():
+    return _s("SUPABASE_BUCKET", "model-bundles")
+
+def _sb_upload(data: bytes, filename: str) -> bool:
+    sb = _get_supabase()
+    if not sb:
+        return False
+    try:
+        sb.storage.from_(_sb_bucket()).upload(
+            filename, data, {"content-type": "application/octet-stream"}
+        )
+        return True
+    except Exception as e:
+        # If file exists, overwrite via update
+        try:
+            sb.storage.from_(_sb_bucket()).update(
+                filename, data, {"content-type": "application/octet-stream"}
+            )
+            return True
+        except Exception:
+            st.warning(f"Cloud upload failed: {e}")
+            return False
+
+def _sb_list() -> list:
+    sb = _get_supabase()
+    if not sb:
+        return []
+    try:
+        items = sb.storage.from_(_sb_bucket()).list()
+        return sorted(
+            [i["name"] for i in items if i.get("name", "").endswith(".pkl")],
+            reverse=True,
+        )
+    except Exception:
+        return []
+
+def _sb_download(filename: str):
+    sb = _get_supabase()
+    if not sb:
+        return None
+    try:
+        return sb.storage.from_(_sb_bucket()).download(filename)
+    except Exception as e:
+        st.error(f"Cloud download failed: {e}")
+        return None
+
+def _sb_delete(filename: str) -> bool:
+    sb = _get_supabase()
+    if not sb:
+        return False
+    try:
+        sb.storage.from_(_sb_bucket()).remove([filename])
+        return True
+    except Exception:
+        return False
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
@@ -549,6 +626,20 @@ with tab_train:
         )
         st.info("Model saved to session. Switch to **Score New Customers** tab to predict on new data.")
 
+        # ── Auto-upload to Supabase ───────────────────────────────────────────
+        if _s("SUPABASE_URL") and _s("SUPABASE_KEY"):
+            safe_client = CLIENT_NAME.replace(" ", "_")
+            safe_model  = best_name.replace(" ", "_")
+            cloud_fname = (f"{safe_client}_{safe_model}_"
+                           f"{datetime.now().strftime('%Y%m%d_%H%M')}.pkl")
+            cloud_buf = io.BytesIO()
+            pickle.dump(bundle, cloud_buf)
+            with st.spinner("Saving to cloud storage..."):
+                ok = _sb_upload(cloud_buf.getvalue(), cloud_fname)
+            if ok:
+                st.success(f"Saved to cloud: **{cloud_fname}**")
+                st.session_state.pop("sb_bundle_list", None)  # force refresh
+
     else:
         st.info("Configure the sidebar and click **Run Training** to begin.")
 
@@ -561,6 +652,52 @@ with tab_score:
 
     # Load model bundle from session or file
     bundle = st.session_state.get("model_bundle")
+
+    # ── Cloud bundle selector ─────────────────────────────────────────────────
+    sb_on = bool(_s("SUPABASE_URL") and _s("SUPABASE_KEY"))
+    if sb_on:
+        st.markdown("#### Cloud Models")
+        cc1, cc2, cc3, cc4 = st.columns([1, 4, 1, 1])
+        with cc1:
+            do_refresh = st.button("Refresh", key="sb_refresh")
+        if do_refresh or "sb_bundle_list" not in st.session_state:
+            st.session_state["sb_bundle_list"] = _sb_list()
+        bundle_list = st.session_state.get("sb_bundle_list", [])
+        with cc2:
+            sel = st.selectbox("Saved bundles", ["— select —"] + bundle_list,
+                               key="sb_sel")
+        with cc3:
+            st.write("")
+            do_load = st.button("Load", key="sb_load",
+                                disabled=(sel == "— select —"))
+        with cc4:
+            st.write("")
+            do_del = st.button("Delete", key="sb_del",
+                               disabled=(sel == "— select —"))
+
+        if do_load and sel != "— select —":
+            with st.spinner(f"Downloading {sel}…"):
+                raw = _sb_download(sel)
+            if raw:
+                try:
+                    bundle = pickle.loads(raw)
+                    st.session_state["model_bundle"] = bundle
+                    st.success(f"Loaded from cloud: **{bundle['model_name']}** "
+                               f"(AUC {bundle['metrics']['AUC']:.3f})")
+                except Exception as e:
+                    st.error(f"Could not parse bundle: {e}")
+
+        if do_del and sel != "— select —":
+            if _sb_delete(sel):
+                st.session_state["sb_bundle_list"] = _sb_list()
+                st.success(f"Deleted: {sel}")
+                st.rerun()
+
+        if not bundle_list:
+            st.caption("No bundles found in cloud. Train a model and it will appear here.")
+        st.markdown("---")
+
+    # ── Session status + local upload ─────────────────────────────────────────
     col_a, col_b = st.columns(2)
     with col_a:
         if bundle:
@@ -568,9 +705,9 @@ with tab_score:
             st.success(f"Model in session: **{bundle['model_name']}** "
                        f"(AUC {bundle['metrics']['AUC']:.3f}) — trained {trained}")
         else:
-            st.warning("No model in session. Train one on the Train tab, or upload a saved bundle below.")
+            st.warning("No model loaded. Train a model, load from cloud, or upload a .pkl below.")
     with col_b:
-        pkl_file = st.file_uploader("Or load a saved .pkl model bundle", type=["pkl"])
+        pkl_file = st.file_uploader("Or upload a saved .pkl model bundle", type=["pkl"])
         if pkl_file:
             try:
                 bundle = pickle.load(pkl_file)
