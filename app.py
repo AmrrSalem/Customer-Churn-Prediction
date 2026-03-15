@@ -436,11 +436,20 @@ def get_shap_explainer(model, model_name, X_background):
 
 
 def shap_values_class1(explainer, X, model_name):
-    """Extract SHAP values for the positive class."""
+    """Extract SHAP values for the positive class as a 2D numpy array."""
     sv = explainer.shap_values(X)
-    if isinstance(sv, list):   # tree models return [class0, class1]
-        return sv[1]
-    return sv                  # linear / kernel return single array
+    # Newer SHAP returns Explanation objects — unwrap
+    if hasattr(sv, "values"):
+        sv = sv.values
+    sv = np.array(sv)
+    # 3D: (n_samples, n_features, n_classes) — take class 1
+    if sv.ndim == 3:
+        return sv[:, :, 1]
+    # List / array of shape (n_classes, n_samples, n_features) — take class 1
+    if sv.ndim == 1 and hasattr(sv[0], "__len__"):
+        return np.array(sv[1])
+    # Already (n_samples, n_features)
+    return sv
 
 
 def plot_shap_bar(mean_abs_shap, feature_names, title="Global Feature Impact (SHAP)"):
