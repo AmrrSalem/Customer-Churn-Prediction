@@ -143,19 +143,77 @@ def _sb_delete(filename: str) -> bool:
 def _check_password(pwd):
     if not pwd:
         return True
-    h = hashlib.sha256(pwd.encode()).hexdigest()
     if st.session_state.get("auth"):
         return True
-    with st.form("login"):
-        st.subheader("Login")
-        entered = st.text_input("Password", type="password")
-        ok = st.form_submit_button("Enter")
-    if ok:
-        if hashlib.sha256(entered.encode()).hexdigest() == h:
-            st.session_state["auth"] = True
-            st.rerun()
-        else:
-            st.error("Incorrect password.")
+
+    h = hashlib.sha256(pwd.encode()).hexdigest()
+
+    # ── Login page styling ────────────────────────────────────────────────────
+    st.markdown("""
+    <style>
+    [data-testid="stAppViewContainer"] { background: #0f1117; }
+    [data-testid="stHeader"] { background: transparent; }
+    .login-wrap {
+        display: flex; flex-direction: column; align-items: center;
+        justify-content: center; min-height: 80vh;
+    }
+    .login-card {
+        background: #1a1d27;
+        border: 1px solid #2d3147;
+        border-radius: 16px;
+        padding: 48px 52px 40px;
+        width: 100%; max-width: 440px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+    .login-icon { font-size: 48px; text-align: center; margin-bottom: 8px; }
+    .login-title {
+        text-align: center; font-size: 26px; font-weight: 700;
+        color: #ffffff; margin-bottom: 4px;
+    }
+    .login-sub {
+        text-align: center; font-size: 14px; color: #8b8fa8;
+        margin-bottom: 32px;
+    }
+    .login-divider {
+        border: none; border-top: 1px solid #2d3147; margin: 24px 0;
+    }
+    .login-footer {
+        text-align: center; font-size: 12px; color: #555872; margin-top: 24px;
+    }
+    div[data-testid="stForm"] {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ── Centered card ─────────────────────────────────────────────────────────
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        st.markdown('<div class="login-icon">📉</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="login-title">{_s("CLIENT_NAME","Churn Dashboard")}</div>',
+                    unsafe_allow_html=True)
+        st.markdown('<div class="login-sub">AI-Powered Customer Retention Platform</div>',
+                    unsafe_allow_html=True)
+
+        with st.form("login", clear_on_submit=True):
+            entered = st.text_input("Password", type="password",
+                                    placeholder="Enter your access password",
+                                    label_visibility="collapsed")
+            ok = st.form_submit_button("Sign In", use_container_width=True,
+                                       type="primary")
+
+        if ok:
+            if hashlib.sha256(entered.encode()).hexdigest() == h:
+                st.session_state["auth"] = True
+                st.rerun()
+            else:
+                st.error("Incorrect password. Please try again.")
+
+        st.markdown('<div class="login-footer">Secured · Encrypted · Private</div>',
+                    unsafe_allow_html=True)
+
     return False
 
 
