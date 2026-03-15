@@ -774,11 +774,45 @@ h3 { color:#c8cde0 !important; font-size:1.05rem !important; font-weight:600 !im
 }
 
 /* ── File uploader ── */
-[data-testid="stFileUploader"] {
-    background:#1a1d27 !important; border:1px dashed #252840 !important;
-    border-radius:10px !important;
+[data-testid="stFileUploader"] { background:transparent !important; }
+[data-testid="stFileUploader"] > div,
+[data-testid="stFileUploader"] section {
+    background: #1a1d27 !important;
+    border: 1.5px dashed #3d4266 !important;
+    border-radius: 12px !important;
+    transition: border-color .2s ease, background .2s ease !important;
 }
-[data-testid="stFileUploader"]:hover { border-color:#667eea !important; }
+[data-testid="stFileUploader"] section:hover {
+    border-color: #667eea !important;
+    background: #1e2235 !important;
+}
+/* Inner drop zone */
+[data-testid="stFileUploader"] section > div {
+    background: transparent !important;
+    border: none !important;
+}
+/* "Drag and drop" text */
+[data-testid="stFileUploader"] span,
+[data-testid="stFileUploader"] p,
+[data-testid="stFileDropzoneInstructions"] span,
+[data-testid="stFileDropzoneInstructions"] small {
+    color: #8b8fa8 !important;
+}
+/* Browse files button */
+[data-testid="stFileUploader"] button,
+[data-testid="baseButton-secondary"] {
+    background: #252840 !important;
+    border: 1px solid #3d4266 !important;
+    color: #a78bfa !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all .15s ease !important;
+}
+[data-testid="stFileUploader"] button:hover {
+    background: #667eea !important;
+    border-color: #667eea !important;
+    color: #fff !important;
+}
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width:6px; height:6px; }
