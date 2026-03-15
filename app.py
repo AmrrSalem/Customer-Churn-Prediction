@@ -571,6 +571,60 @@ st.markdown("""
 [data-testid="stToolbar"]          { display:none; }
 .block-container { padding-top:1.8rem; padding-bottom:2rem; }
 
+/* ── Global text — everything white/light on dark ── */
+html, body, [class*="css"], .stMarkdown, .stText,
+p, span, div, li, td, th, label, caption,
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stMarkdownContainer"] span {
+    color: #e2e6f3 !important;
+}
+/* Muted secondary text */
+small, .stCaption, [data-testid="stCaptionContainer"] p { color:#8b8fa8 !important; }
+
+/* ── All form labels ── */
+.stRadio label, .stCheckbox label,
+.stSlider label, .stSelectbox label,
+.stMultiSelect label, .stTextInput label,
+.stNumberInput label, .stTextArea label,
+.stFileUploader label, .stDateInput label,
+[data-baseweb="form-control-label"] { color:#c8cde0 !important; font-size:.88rem !important; }
+
+/* ── Radio & checkbox option text ── */
+.stRadio [data-testid="stWidgetLabel"] p,
+.stCheckbox [data-testid="stWidgetLabel"] p,
+[data-baseweb="radio"] label p,
+[data-baseweb="checkbox"] label p { color:#c8cde0 !important; }
+
+/* ── Selectbox & multiselect option text ── */
+[data-baseweb="menu"] li,
+[data-baseweb="option"],
+[role="option"] { color:#e2e6f3 !important; background:#1a1d27 !important; }
+[data-baseweb="menu"] li:hover,
+[role="option"]:hover { background:#252840 !important; }
+
+/* ── Selectbox selected value ── */
+[data-baseweb="select"] [data-testid="stWidgetLabel"],
+[data-baseweb="select"] span,
+[data-baseweb="select"] div { color:#e2e6f3 !important; }
+
+/* ── Slider value label ── */
+[data-testid="stSlider"] [data-testid="stWidgetLabel"] p,
+[data-testid="stSlider"] div[aria-label] { color:#c8cde0 !important; }
+[data-testid="stTickBar"] { color:#8b8fa8 !important; }
+
+/* ── Number input ── */
+.stNumberInput input { color:#e2e6f3 !important; }
+
+/* ── Table / dataframe cells ── */
+[data-testid="stDataFrame"] td,
+[data-testid="stDataFrame"] tr { color:#e2e6f3 !important; }
+
+/* ── Expander text ── */
+[data-testid="stExpander"] p,
+[data-testid="stExpander"] li,
+[data-testid="stExpander"] span { color:#c8cde0 !important; }
+
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: #13161f;
