@@ -444,36 +444,48 @@ def recommend_action(customer_id, prob, risk_level, df_raw, id_col):
 
 
 # ── Chart helpers ─────────────────────────────────────────────────────────────
+_PLOT_LAYOUT = dict(
+    paper_bgcolor="#1a1d27", plot_bgcolor="#1a1d27",
+    font=dict(color="#c8cde0", family="Inter, system-ui, sans-serif"),
+    xaxis=dict(gridcolor="#252840", zerolinecolor="#252840"),
+    yaxis=dict(gridcolor="#252840", zerolinecolor="#252840"),
+    margin=dict(l=10, r=10, t=50, b=10),
+)
+
 def plot_confusion(cm, labels=("Retained", "Churned")):
     z = np.array(cm)
     fig = go.Figure(go.Heatmap(
         z=z, x=[f"Pred {labels[0]}", f"Pred {labels[1]}"],
         y=[f"Actual {labels[0]}", f"Actual {labels[1]}"],
-        text=z, texttemplate="%{text}", colorscale="Blues"))
-    fig.update_layout(height=350, margin=dict(l=40,r=40,t=40,b=40))
+        text=z, texttemplate="%{text}", colorscale="Purples"))
+    fig.update_layout(height=350, **_PLOT_LAYOUT)
     return fig
 
 def plot_roc_comparison(metrics, y_test):
     fig = go.Figure()
-    for name, m in metrics.items():
+    colors = ["#667eea","#a78bfa","#22c55e","#f59e0b","#ef4444","#06b6d4","#ec4899"]
+    for i, (name, m) in enumerate(metrics.items()):
         fpr, tpr, _ = roc_curve(y_test, m["proba"])
         fig.add_trace(go.Scatter(x=fpr, y=tpr, mode="lines",
-                                  name=f"{name} (AUC={m['AUC']:.3f})"))
+                                  name=f"{name} (AUC={m['AUC']:.3f})",
+                                  line=dict(color=colors[i % len(colors)], width=2)))
     fig.add_trace(go.Scatter(x=[0,1], y=[0,1], mode="lines", name="Chance",
-                              line=dict(dash="dash", color="gray")))
-    fig.update_layout(title="ROC Comparison", xaxis_title="FPR", yaxis_title="TPR",
-                      height=450, margin=dict(l=40,r=40,t=60,b=40))
+                              line=dict(dash="dash", color="#555872", width=1)))
+    fig.update_layout(title="ROC Curve Comparison", xaxis_title="False Positive Rate",
+                      yaxis_title="True Positive Rate", height=450, **_PLOT_LAYOUT)
     return fig
 
 def plot_pr_comparison(metrics, y_test):
     fig = go.Figure()
-    for name, m in metrics.items():
+    colors = ["#667eea","#a78bfa","#22c55e","#f59e0b","#ef4444","#06b6d4","#ec4899"]
+    for i, (name, m) in enumerate(metrics.items()):
         p, r, _ = precision_recall_curve(y_test, m["proba"])
         fig.add_trace(go.Scatter(x=r, y=p, mode="lines",
-                                  name=f"{name} (AP={m['AP']:.3f})"))
+                                  name=f"{name} (AP={m['AP']:.3f})",
+                                  line=dict(color=colors[i % len(colors)], width=2)))
     fig.update_layout(title="Precision-Recall Comparison",
                       xaxis_title="Recall", yaxis_title="Precision",
-                      height=450, margin=dict(l=40,r=40,t=60,b=40))
+                      height=450, **_PLOT_LAYOUT)
     return fig
 
 
@@ -515,25 +527,25 @@ def plot_shap_bar(mean_abs_shap, feature_names, title="Global Feature Impact (SH
                           "importance": mean_abs_shap}
                         ).sort_values("importance").tail(20)
     fig = px.bar(df_s, x="importance", y="feature", orientation="h",
-                 title=title, color="importance", color_continuous_scale="Reds")
-    fig.update_layout(height=500, coloraxis_showscale=False,
-                      margin=dict(l=10, r=10, t=50, b=10))
+                 title=title, color="importance",
+                 color_continuous_scale=["#252840","#667eea","#a78bfa"])
+    fig.update_layout(height=500, coloraxis_showscale=False, **_PLOT_LAYOUT)
     return fig
 
 
 def plot_shap_waterfall(shap_vals_row, feature_names, base_value, customer_id):
-    """Plotly waterfall for a single customer's SHAP values."""
-    sv   = shap_vals_row
-    idx  = np.argsort(np.abs(sv))[-12:]          # top 12 features
-    vals = sv[idx]
+    sv    = shap_vals_row
+    idx   = np.argsort(np.abs(sv))[-12:]
+    vals  = sv[idx]
     feats = [feature_names[i] for i in idx]
-    colors = ["#d62728" if v > 0 else "#2ca02c" for v in vals]
+    colors = ["#ef4444" if v > 0 else "#22c55e" for v in vals]
     fig = go.Figure(go.Bar(x=vals, y=feats, orientation="h",
-                           marker_color=colors))
+                           marker_color=colors,
+                           marker_line=dict(width=0)))
     fig.update_layout(
         title=f"SHAP Explanation — Customer: {customer_id}",
         xaxis_title="SHAP value (impact on churn probability)",
-        height=420, margin=dict(l=10, r=10, t=50, b=10))
+        height=420, **_PLOT_LAYOUT)
     return fig
 
 
@@ -550,7 +562,186 @@ st.set_page_config(page_title=f"{CLIENT_NAME} Churn Dashboard",
 if not _check_password(APP_PASSWORD):
     st.stop()
 
-st.title(f"{CLIENT_NAME} — Customer Churn Dashboard")
+# ── Global CSS ────────────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+/* ── Base & background ── */
+[data-testid="stAppViewContainer"] { background:#0f1117; }
+[data-testid="stHeader"]           { background:transparent; }
+[data-testid="stToolbar"]          { display:none; }
+.block-container { padding-top:1.8rem; padding-bottom:2rem; }
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: #13161f;
+    border-right: 1px solid #1e2130;
+}
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color:#a0a8c8; font-size:0.72rem; font-weight:700;
+    letter-spacing:.12em; text-transform:uppercase; margin-bottom:.4rem;
+}
+[data-testid="stSidebar"] .stRadio label,
+[data-testid="stSidebar"] .stSlider label,
+[data-testid="stSidebar"] .stMultiSelect label { color:#c8cde0; font-size:.85rem; }
+
+/* ── App title ── */
+h1 {
+    background: linear-gradient(90deg,#667eea,#a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    font-size:2rem !important; font-weight:800 !important; letter-spacing:-.02em;
+    margin-bottom:.2rem !important;
+}
+
+/* ── Section headers ── */
+h2 { color:#e2e6f3 !important; font-size:1.3rem !important; font-weight:700 !important;
+     border-left:3px solid #667eea; padding-left:.6rem; margin-top:1.4rem !important; }
+h3 { color:#c8cde0 !important; font-size:1.05rem !important; font-weight:600 !important; }
+
+/* ── Metric cards ── */
+[data-testid="metric-container"] {
+    background: #1a1d27;
+    border: 1px solid #252840;
+    border-radius: 12px;
+    padding: 1rem 1.2rem !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,.35);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+[data-testid="metric-container"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102,126,234,.18);
+}
+[data-testid="metric-container"] label { color:#8b8fa8 !important; font-size:.78rem !important;
+    font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    color:#e8ecff !important; font-size:1.7rem !important; font-weight:700 !important; }
+[data-testid="stMetricDelta"] { font-size:.78rem !important; }
+
+/* ── Tabs ── */
+[data-baseweb="tab-list"] {
+    background: #13161f !important;
+    border-radius: 10px !important;
+    padding: 4px !important;
+    gap: 2px !important;
+    border-bottom: none !important;
+}
+[data-baseweb="tab"] {
+    background: transparent !important;
+    border-radius: 8px !important;
+    color: #8b8fa8 !important;
+    font-weight: 600 !important;
+    font-size: .85rem !important;
+    padding: .45rem 1.1rem !important;
+    transition: all .15s ease !important;
+}
+[aria-selected="true"][data-baseweb="tab"] {
+    background: linear-gradient(135deg,#667eea,#764ba2) !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 12px rgba(102,126,234,.4) !important;
+}
+[data-baseweb="tab-highlight"] { display:none !important; }
+[data-baseweb="tab-border"]    { display:none !important; }
+
+/* ── Buttons ── */
+.stButton > button {
+    background: linear-gradient(135deg,#667eea,#764ba2) !important;
+    color: #fff !important; border: none !important;
+    border-radius: 8px !important; font-weight: 600 !important;
+    padding: .45rem 1.2rem !important;
+    box-shadow: 0 2px 10px rgba(102,126,234,.35) !important;
+    transition: all .15s ease !important;
+}
+.stButton > button:hover {
+    box-shadow: 0 4px 18px rgba(102,126,234,.55) !important;
+    transform: translateY(-1px) !important;
+}
+.stDownloadButton > button {
+    background: #1a1d27 !important;
+    border: 1px solid #667eea !important;
+    color: #a78bfa !important;
+    border-radius: 8px !important; font-weight:600 !important;
+    transition: all .15s ease !important;
+}
+.stDownloadButton > button:hover {
+    background: #667eea !important; color:#fff !important;
+}
+
+/* ── Inputs & selects ── */
+.stTextInput input, .stSelectbox div[data-baseweb="select"] > div,
+.stMultiSelect div[data-baseweb="select"] > div,
+.stNumberInput input, .stTextArea textarea {
+    background: #1a1d27 !important;
+    border: 1px solid #252840 !important;
+    border-radius: 8px !important;
+    color: #e2e6f3 !important;
+}
+.stTextInput input:focus, .stSelectbox div[data-baseweb="select"] > div:focus-within {
+    border-color: #667eea !important;
+    box-shadow: 0 0 0 2px rgba(102,126,234,.25) !important;
+}
+
+/* ── Dataframes ── */
+[data-testid="stDataFrame"] { border-radius:10px; overflow:hidden;
+    border:1px solid #252840 !important; }
+[data-testid="stDataFrame"] thead th {
+    background:#1a1d27 !important; color:#a0a8c8 !important;
+    font-size:.78rem !important; font-weight:700; letter-spacing:.06em;
+    text-transform:uppercase;
+}
+
+/* ── Alerts & info boxes ── */
+.stSuccess { background:#0d2b1a !important; border-left:3px solid #22c55e !important;
+    border-radius:8px !important; color:#86efac !important; }
+.stWarning { background:#2b1f0a !important; border-left:3px solid #f59e0b !important;
+    border-radius:8px !important; color:#fcd34d !important; }
+.stError   { background:#2b0d0d !important; border-left:3px solid #ef4444 !important;
+    border-radius:8px !important; color:#fca5a5 !important; }
+.stInfo    { background:#0d1b2b !important; border-left:3px solid #667eea !important;
+    border-radius:8px !important; color:#93c5fd !important; }
+
+/* ── Expanders ── */
+[data-testid="stExpander"] {
+    background:#1a1d27 !important; border:1px solid #252840 !important;
+    border-radius:10px !important;
+}
+[data-testid="stExpander"] summary { color:#c8cde0 !important; font-weight:600 !important; }
+
+/* ── Plotly chart containers ── */
+[data-testid="stPlotlyChart"] {
+    background:#1a1d27; border-radius:12px; padding:.5rem;
+    border:1px solid #252840;
+}
+
+/* ── Sliders ── */
+[data-testid="stSlider"] [data-baseweb="slider"] div[role="slider"] {
+    background: linear-gradient(135deg,#667eea,#764ba2) !important;
+    border:none !important;
+}
+
+/* ── File uploader ── */
+[data-testid="stFileUploader"] {
+    background:#1a1d27 !important; border:1px dashed #252840 !important;
+    border-radius:10px !important;
+}
+[data-testid="stFileUploader"]:hover { border-color:#667eea !important; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:#13161f; }
+::-webkit-scrollbar-thumb { background:#2d3147; border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:#667eea; }
+</style>
+""", unsafe_allow_html=True)
+
+# ── App header ────────────────────────────────────────────────────────────────
+st.markdown(
+    f"<h1>📉 {CLIENT_NAME} — Churn Intelligence</h1>"
+    f"<p style='color:#555872;font-size:.85rem;margin-top:-.5rem;margin-bottom:1rem'>"
+    f"AI-powered customer retention · Model training · Risk scoring · Explainability"
+    f"</p>",
+    unsafe_allow_html=True,
+)
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
