@@ -323,7 +323,7 @@ def preprocess_for_scoring(df_new, bundle):
 
 
 # ── Model training ────────────────────────────────────────────────────────────
-def train_models(X_train, X_test, y_train, y_test, params):
+def train_models(X_train, X_test, y_train, y_test, params, progress_callback=None):
     models, scaler = {}, params["scaler"]
     def _fit_predict(model, scaled=False):
         Xt = scaler.transform(X_train) if scaled else X_train
@@ -362,10 +362,12 @@ def train_models(X_train, X_test, y_train, y_test, params):
             n_estimators=params.get("ada_n_estimators",200),
             learning_rate=params.get("ada_learning_rate",1.0), random_state=42), False),
     }
+    selected = [n for n in params["models"] if n in specs]
+    total = len(selected)
     metrics = {}
-    for name in params["models"]:
-        if name not in specs:
-            continue
+    for i, name in enumerate(selected):
+        if progress_callback:
+            progress_callback(i, total, name, done=False)
         m, scaled = specs[name]
         model, proba = _fit_predict(m, scaled)
         preds = (proba >= 0.5).astype(int)
@@ -378,6 +380,8 @@ def train_models(X_train, X_test, y_train, y_test, params):
             "AP": average_precision_score(y_test, proba),
             "proba": proba, "model": model,
         }
+        if progress_callback:
+            progress_callback(i + 1, total, name, done=True)
     return metrics
 
 
@@ -975,8 +979,23 @@ with tab_train:
         if not choose_models:
             st.warning("Select at least one model.")
             st.stop()
-        with st.spinner("Training models..."):
-            metrics = train_models(X_train, X_test, y_train, y_test, params)
+        _progress_bar   = st.progress(0, text="Preparing training...")
+        _status_text    = st.empty()
+
+        def _on_progress(done, total, name, done_flag):
+            pct = int(done / total * 100)
+            if not done_flag:
+                _progress_bar.progress(max(pct, 1),
+                    text=f"Training {name}...  ({done + 1} of {total})  —  {pct}%")
+                _status_text.caption(f"Current model: **{name}**")
+            else:
+                _progress_bar.progress(pct,
+                    text=f"Finished {name}  ({done} of {total})  —  {pct}%")
+
+        metrics = train_models(X_train, X_test, y_train, y_test, params,
+                               progress_callback=_on_progress)
+        _progress_bar.progress(100, text=f"All {len(choose_models)} models trained — 100%")
+        _status_text.empty()
 
         # Results table
         st.markdown("## Model Comparison")
