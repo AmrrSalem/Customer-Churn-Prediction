@@ -1113,6 +1113,7 @@ with tab_train:
             file_name=f"churn_model_{datetime.now().strftime('%Y%m%d_%H%M')}.pkl",
             mime="application/octet-stream",
             help="Save this file — reload it in the Score tab to predict without retraining",
+            type="primary",
         )
         st.info("Model saved to session. Switch to **Score New Customers** tab to predict on new data.")
 
