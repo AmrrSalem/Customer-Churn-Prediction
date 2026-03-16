@@ -1080,7 +1080,8 @@ with tab_train:
 
         # ── Save model bundle ─────────────────────────────────────────────────
         st.markdown("---")
-        st.markdown("## Save Model")
+        st.markdown('<p style="font-size:1.5rem;font-weight:700;margin:0.5rem 0">Save Model</p>',
+                    unsafe_allow_html=True)
         bundle = {
             "model":          best["model"],
             "model_name":     best_name,
