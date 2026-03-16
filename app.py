@@ -982,15 +982,15 @@ with tab_train:
         _progress_bar   = st.progress(0, text="Preparing training...")
         _status_text    = st.empty()
 
-        def _on_progress(done, total, name, done=False):
-            pct = int(done / total * 100)
+        def _on_progress(n_done, total, name, done=False):
+            pct = int(n_done / total * 100)
             if not done:
                 _progress_bar.progress(max(pct, 1),
-                    text=f"Training {name}...  ({done + 1} of {total})  —  {pct}%")
+                    text=f"Training {name}...  ({n_done + 1} of {total})  —  {pct}%")
                 _status_text.caption(f"Current model: **{name}**")
             else:
                 _progress_bar.progress(pct,
-                    text=f"Finished {name}  ({done} of {total})  —  {pct}%")
+                    text=f"Finished {name}  ({n_done} of {total})  —  {pct}%")
 
         metrics = train_models(X_train, X_test, y_train, y_test, params,
                                progress_callback=_on_progress)
