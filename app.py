@@ -219,16 +219,15 @@ def _check_password(pwd):
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner=False)
-def load_df(source, path_or_url=None, uploaded_bytes=None):
+def load_df(source, uploaded_bytes=None):
     na = [" ", ""]
     if source == "Upload CSV":
         return pd.read_csv(io.BytesIO(uploaded_bytes), na_values=na), "uploaded file"
-    if source == "Local file":
-        p = Path(path_or_url).expanduser().resolve()
-        return pd.read_csv(p, na_values=na), str(p)
-    if source == "Demo - IBM Telco":
-        return pd.read_csv(PRIMARY_URL, na_values=na), PRIMARY_URL
-    return pd.read_csv(FALLBACK_URL, na_values=na), FALLBACK_URL
+    # "Try with sample data" — try primary URL, fall back silently
+    try:
+        return pd.read_csv(PRIMARY_URL, na_values=na), "sample data"
+    except Exception:
+        return pd.read_csv(FALLBACK_URL, na_values=na), "sample data"
 
 
 # ── Feature engineering ───────────────────────────────────────────────────────
@@ -546,6 +545,36 @@ def plot_shap_waterfall(shap_vals_row, feature_names, base_value, customer_id):
     return fig
 
 
+# ── Business-friendly feature label map ───────────────────────────────────────
+_FEATURE_LABELS = {
+    "contract_risk":          "Contract Type Risk",
+    "charges_per_tenure":     "Spend vs. Loyalty",
+    "monthly_to_total_ratio": "Monthly vs. Total Spend",
+    "is_electronic_check":    "Pays by Electronic Check",
+    "has_internet_and_phone": "Has Internet + Phone Bundle",
+    "security_and_backup":    "Has Security & Backup",
+    "total_services":         "Number of Services",
+    "tenure_group":           "How Long They've Been a Customer",
+    "tenure":                 "Customer Tenure (months)",
+    "MonthlyCharges":         "Monthly Spend ($)",
+    "TotalCharges":           "Total Spend ($)",
+    "Contract":               "Contract Type",
+    "PaymentMethod":          "Payment Method",
+    "InternetService":        "Internet Service",
+    "PhoneService":           "Phone Service",
+    "OnlineSecurity":         "Online Security",
+    "OnlineBackup":           "Online Backup",
+    "TechSupport":            "Tech Support",
+    "StreamingTV":            "Streaming TV",
+    "StreamingMovies":        "Streaming Movies",
+    "DeviceProtection":       "Device Protection",
+}
+
+def _friendly(col):
+    """Return a business-readable label for a feature column name."""
+    return _FEATURE_LABELS.get(col, col.replace("_", " ").title())
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 #  UI
 # ══════════════════════════════════════════════════════════════════════════════
@@ -838,24 +867,19 @@ st.markdown(
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Data Source")
-    source = st.radio("Source:", ["Upload CSV", "Demo - IBM Telco",
-                                   "Demo - Fallback mirror", "Local file"])
-    uploaded_file, local_path = None, "./data/Telco-Customer-Churn.csv"
+    st.header("Upload Your Customer Data")
+    source = st.radio("Source:", ["Upload CSV", "Try with sample data"])
+    uploaded_file = None
     if source == "Upload CSV":
-        uploaded_file = st.file_uploader("Upload training CSV", type=["csv"])
-    elif source == "Local file":
-        local_path = st.text_input("Local CSV path", value=local_path)
+        uploaded_file = st.file_uploader("Upload your customer CSV", type=["csv"])
 
-    st.header("Train / Test Split")
-    test_size = st.slider("Test size", 0.1, 0.4, 0.2, 0.05)
-    st.caption("The best model is selected automatically — optimized for catching high-risk customers.")
+    test_size = 0.2   # locked — no need to expose this to users
     st.header("Run")
-    run_btn = st.button("Run Training", type="primary")
+    run_btn = st.button("Analyze Now", type="primary")
 
 # ── Four product tabs ─────────────────────────────────────────────────────────
 tab_train, tab_score, tab_alert, tab_explain = st.tabs(
-    ["Train Model", "Score New Customers", "Email Alert", "Explain (SHAP)"])
+    ["Analyze My Customers", "Check New Customers", "Email Alert", "Why They'll Leave"])
 
 # ════════════════════════════════
 #  TAB 1 — TRAIN
@@ -867,8 +891,8 @@ with tab_train:
 
     try:
         ub = uploaded_file.read() if uploaded_file else None
-        df, src_str = load_df(source, local_path if source == "Local file" else None, ub)
-        st.success(f"Loaded {len(df):,} rows from: {src_str}")
+        df, src_str = load_df(source, ub)
+        st.success(f"Your data is ready — {len(df):,} customers loaded")
     except Exception as e:
         st.error(f"Failed to load data: {e}")
         st.stop()
@@ -880,13 +904,13 @@ with tab_train:
     ca, cb = st.columns(2)
     with ca:
         default_tgt = "Churn" if "Churn" in all_cols else (obj_cols[0] if obj_cols else all_cols[0])
-        target_col  = st.selectbox("Target column", all_cols,
+        target_col  = st.selectbox("Which column shows if a customer left?", all_cols,
                                     index=all_cols.index(default_tgt))
     with cb:
         id_cands  = [c for c in all_cols if "id" in c.lower()]
         default_id = id_cands[0] if id_cands else all_cols[0]
         id_opts    = ["(none)"] + all_cols
-        id_sel     = st.selectbox("Customer ID column (dropped from training)",
+        id_sel     = st.selectbox("Customer ID column",
                                    id_opts,
                                    index=id_opts.index(default_id) if default_id in id_opts else 0)
         id_col = None if id_sel == "(none)" else id_sel
@@ -899,7 +923,7 @@ with tab_train:
     c2.metric("Columns", len(df.columns))
     if target_col in df.columns:
         top_v = df[target_col].value_counts().idxmax()
-        c3.metric("Event rate", f"{(~df[target_col].isin([top_v])).mean():.1%}")
+        c3.metric("Churn Rate", f"{(~df[target_col].isin([top_v])).mean():.1%}")
 
     # EDA
     st.markdown("### Exploratory Analysis")
@@ -935,11 +959,10 @@ with tab_train:
             pct = int(n_done / total * 100)
             if not done:
                 _progress_bar.progress(max(pct, 1),
-                    text=f"Training {name}...  ({n_done + 1} of {total})  —  {pct}%")
-                _status_text.caption(f"Current model: **{name}**")
+                    text=f"Analyzing your customer patterns...  Step {n_done + 1} of {total}  —  {pct}%")
             else:
                 _progress_bar.progress(pct,
-                    text=f"Finished {name}  ({n_done} of {total})  —  {pct}%")
+                    text=f"Step {n_done} of {total} complete  —  {pct}%")
 
         best_model, best_name, best_recall, best_proba = auto_select_best_model(
             X_train, X_test, y_train, y_test, progress_callback=_on_progress)
@@ -953,8 +976,8 @@ with tab_train:
 
         # ── Success banner ────────────────────────────────────────────────────
         st.success(
-            f"Model automatically optimized using **{best_name}** "
-            f"(Recall: {best_recall:.1%}) — Optimized for capturing high-risk customers."
+            f"Analysis complete — your model catches **{best_recall:.0%} of customers likely to leave**. "
+            f"Review the action list below to start retaining them."
         )
 
         # ── Revenue at Risk — Business Impact ─────────────────────────────────
@@ -1002,10 +1025,11 @@ with tab_train:
             imp = pd.DataFrame({"feature": X.columns,
                                  "importance": best_model.feature_importances_}
                                ).sort_values("importance", ascending=False)
+            imp["feature"] = imp["feature"].apply(_friendly)
             st.markdown("### Top Factors Driving Churn")
             st.plotly_chart(
                 px.bar(imp.head(15), x="importance", y="feature",
-                       orientation="h", title=f"What's driving churn — {best_name}"),
+                       orientation="h", title="What's driving your customers to leave"),
                 use_container_width=True)
 
         # ── Cohort / Time-series view ──────────────────────────────────────────
@@ -1077,14 +1101,14 @@ with tab_train:
         pickle.dump(bundle, buf)
         buf.seek(0)
         st.download_button(
-            label=f"Download Model Bundle ({best_name})",
+            label="Save My Analysis",
             data=buf,
-            file_name=f"churn_model_{datetime.now().strftime('%Y%m%d_%H%M')}.pkl",
+            file_name=f"churn_analysis_{datetime.now().strftime('%Y%m%d_%H%M')}.pkl",
             mime="application/octet-stream",
-            help="Save this file — reload it in the Score tab to predict without retraining",
+            help="Save this file so you can reuse your analysis on new customers without re-running it.",
             type="primary",
         )
-        st.info("Model saved to session. Switch to **Score New Customers** tab to predict on new data.")
+        st.info("Analysis saved. Switch to **Check New Customers** to score your latest customer list.")
 
         # ── Auto-upload to Supabase ───────────────────────────────────────────
         if _s("SUPABASE_URL") and _s("SUPABASE_KEY"):
@@ -1142,8 +1166,8 @@ with tab_score:
                 try:
                     bundle = pickle.loads(raw)
                     st.session_state["model_bundle"] = bundle
-                    st.success(f"Loaded from cloud: **{bundle['model_name']}** "
-                               f"(AUC {bundle['metrics']['AUC']:.3f})")
+                    recall = bundle["metrics"].get("Recall", 0)
+                    st.success(f"Model loaded — catches {recall:.0%} of customers likely to leave.")
                 except Exception as e:
                     st.error(f"Could not parse bundle: {e}")
 
@@ -1162,36 +1186,28 @@ with tab_score:
     with col_a:
         if bundle:
             trained = bundle.get("trained_at", "unknown")[:16].replace("T", " ")
-            st.success(f"Model in session: **{bundle['model_name']}** "
-                       f"(AUC {bundle['metrics']['AUC']:.3f}) — trained {trained}")
+            recall  = bundle["metrics"].get("Recall", 0)
+            st.success(
+                f"Ready — model trained on {trained}, "
+                f"catches **{recall:.0%} of customers likely to leave**."
+            )
         else:
-            st.warning("No model loaded. Train a model, load from cloud, or upload a .pkl below.")
+            st.warning("No model loaded. Run an analysis first, or upload a saved model below.")
     with col_b:
-        pkl_file = st.file_uploader("Or upload a saved .pkl model bundle", type=["pkl"])
+        pkl_file = st.file_uploader("Or upload a previously saved model", type=["pkl"])
         if pkl_file:
             try:
                 bundle = pickle.load(pkl_file)
                 st.session_state["model_bundle"] = bundle
-                st.success(f"Loaded: **{bundle['model_name']}** "
-                           f"(AUC {bundle['metrics']['AUC']:.3f})")
+                recall = bundle["metrics"].get("Recall", 0)
+                st.success(f"Model loaded — catches {recall:.0%} of customers likely to leave.")
             except Exception as e:
                 st.error(f"Could not load bundle: {e}")
 
     if not bundle:
         st.stop()
 
-    # Model summary
-    with st.expander("Model details", expanded=False):
-        m_info = bundle["metrics"]
-        mc1, mc2, mc3, mc4 = st.columns(4)
-        mc1.metric("Model", bundle["model_name"])
-        mc2.metric("AUC",      f"{m_info['AUC']:.3f}")
-        mc3.metric("F1",       f"{m_info['F1']:.3f}")
-        mc4.metric("Accuracy", f"{m_info['Accuracy']:.3f}")
-        score_thr = st.slider("Risk threshold", 0.1, 0.9,
-                               float(bundle.get("threshold", 0.5)), 0.01,
-                               key="score_thr")
-    score_thr = st.session_state.get("score_thr", bundle.get("threshold", 0.5))
+    score_thr = float(bundle.get("threshold", 0.5))
 
     new_file = st.file_uploader("Upload new customer CSV to score", type=["csv"],
                                  key="new_customers")
@@ -1303,12 +1319,11 @@ with tab_alert:
 
     ea, eb = st.columns(2)
     with ea:
-        recipient = st.text_input("Recipient email", placeholder="manager@company.com")
+        recipient = st.text_input("Send alert to (email address)", placeholder="manager@company.com")
     with eb:
-        st.markdown("**SMTP settings** (from secrets.toml or enter below)")
         use_secrets = bool(_s("SMTP_USER"))
         if use_secrets:
-            st.success("SMTP credentials loaded from secrets.toml")
+            st.success("Email sending is configured and ready.")
             smtp_cfg = {
                 "host":      _s("SMTP_HOST", "smtp.gmail.com"),
                 "port":      _s("SMTP_PORT", "587"),
@@ -1317,12 +1332,14 @@ with tab_alert:
                 "from_addr": _s("SMTP_FROM", _s("SMTP_USER")),
             }
         else:
-            st.warning("No SMTP secrets found. Enter credentials below.")
+            st.info("Enter your Gmail address and App Password to enable email sending.")
             smtp_cfg = {
-                "host":     st.text_input("SMTP Host", value="smtp.gmail.com"),
-                "port":     st.text_input("SMTP Port", value="587"),
-                "user":     st.text_input("SMTP Username", placeholder="you@gmail.com"),
-                "password": st.text_input("SMTP Password", type="password"),
+                "host":      "smtp.gmail.com",
+                "port":      "587",
+                "user":      st.text_input("Your Gmail address", placeholder="you@gmail.com"),
+                "password":  st.text_input("Gmail App Password",  type="password",
+                                            help="Use a Gmail App Password, not your main password. "
+                                                 "Generate one at myaccount.google.com → Security → App Passwords."),
                 "from_addr": "",
             }
 
@@ -1360,15 +1377,15 @@ with tab_alert:
 #  TAB 4 — EXPLAIN (SHAP)
 # ════════════════════════════════
 with tab_explain:
-    st.subheader("Explain Predictions with SHAP")
+    st.subheader("Why Are Your Customers Leaving?")
 
     if not _SHAP_AVAILABLE:
-        st.error("SHAP is not installed. Add `shap>=0.44` to requirements.txt and redeploy.")
+        st.error("This feature is temporarily unavailable. Please contact support.")
         st.stop()
 
     bundle = st.session_state.get("model_bundle")
     if not bundle:
-        st.info("Train a model first on the **Train Model** tab.")
+        st.info("Run an analysis first on the **Analyze My Customers** tab.")
         st.stop()
 
     model      = bundle["model"]
@@ -1378,7 +1395,7 @@ with tab_explain:
     # ── Global SHAP ────────────────────────────────────────────────────────────
     X_bg = st.session_state.get("X_train_shap")
     if X_bg is None:
-        st.info("Retrain the model to enable SHAP analysis (training data needed for background).")
+        st.info("Please re-run your analysis to enable this view.")
         st.stop()
 
     if model_name == "Logistic Regression":
@@ -1394,11 +1411,12 @@ with tab_explain:
             st.stop()
         sv_global = shap_values_class1(explainer, X_bg_for_explainer, model_name)
 
-    mean_shap = np.abs(sv_global).mean(axis=0)
-    st.plotly_chart(plot_shap_bar(mean_shap, feat_cols,
-                                   f"Global Feature Impact — {model_name}"),
+    mean_shap       = np.abs(sv_global).mean(axis=0)
+    friendly_feats  = [_friendly(f) for f in feat_cols]
+    st.plotly_chart(plot_shap_bar(mean_shap, friendly_feats,
+                                   "What matters most in predicting who will leave"),
                     use_container_width=True)
-    st.caption("Mean |SHAP value| across training sample. Higher = more influential feature.")
+    st.caption("Longer bar = stronger influence on whether a customer stays or leaves.")
 
     # ── Per-customer waterfall ─────────────────────────────────────────────────
     st.markdown("---")
@@ -1409,7 +1427,7 @@ with tab_explain:
     results_ex = st.session_state.get("score_results")
 
     if X_scored is None or score_ids is None:
-        st.info("Score customers on the **Score New Customers** tab to enable individual explanations.")
+        st.info("Check customers on the **Check New Customers** tab first to enable individual explanations.")
     else:
         if model_name == "Logistic Regression":
             X_sc_exp = pd.DataFrame(bundle["scaler"].transform(X_scored), columns=feat_cols)
@@ -1454,4 +1472,4 @@ with tab_explain:
 
         st.plotly_chart(plot_shap_waterfall(sv_row, feat_cols, base_val, sel_id),
                         use_container_width=True)
-        st.caption("Red bars push churn probability UP. Green bars push it DOWN.")
+        st.caption("Red bars are reasons this customer is likely to leave. Green bars are reasons they might stay.")
