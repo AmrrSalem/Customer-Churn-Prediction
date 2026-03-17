@@ -385,6 +385,34 @@ def train_models(X_train, X_test, y_train, y_test, params, progress_callback=Non
     return metrics
 
 
+# ── Auto model selection (B2B SaaS — hides the math) ─────────────────────────
+def auto_select_best_model(X_train, X_test, y_train, y_test, progress_callback=None):
+    """Silently train LightGBM, XGBoost, Random Forest. Return best by Recall (churn class)."""
+    candidates = [
+        ("LightGBM",      lgb.LGBMClassifier(
+            n_estimators=200, max_depth=6, learning_rate=0.1, random_state=42, verbose=-1)),
+        ("XGBoost",       xgb.XGBClassifier(
+            n_estimators=200, max_depth=6, learning_rate=0.1,
+            random_state=42, eval_metric="logloss")),
+        ("Random Forest", RandomForestClassifier(
+            n_estimators=200, max_depth=10, random_state=42)),
+    ]
+    best_name, best_model, best_recall, best_proba = None, None, -1, None
+    total = len(candidates)
+    for i, (name, model) in enumerate(candidates):
+        if progress_callback:
+            progress_callback(i, total, name, done=False)
+        model.fit(X_train, y_train)
+        proba  = model.predict_proba(X_test)[:, 1]
+        preds  = (proba >= 0.5).astype(int)
+        rec    = recall_score(y_test, preds, zero_division=0)
+        if rec > best_recall:
+            best_recall, best_name, best_model, best_proba = rec, name, model, proba
+        if progress_callback:
+            progress_callback(i + 1, total, name, done=True)
+    return best_model, best_name, best_recall, best_proba
+
+
 # ── Email alert ───────────────────────────────────────────────────────────────
 def send_alert_email(high_risk_df, recipient, smtp_cfg, client_name, threshold):
     n = len(high_risk_df)
@@ -456,41 +484,6 @@ _PLOT_LAYOUT = dict(
     margin=dict(l=10, r=10, t=50, b=10),
 )
 
-def plot_confusion(cm, labels=("Retained", "Churned")):
-    z = np.array(cm)
-    fig = go.Figure(go.Heatmap(
-        z=z, x=[f"Pred {labels[0]}", f"Pred {labels[1]}"],
-        y=[f"Actual {labels[0]}", f"Actual {labels[1]}"],
-        text=z, texttemplate="%{text}", colorscale="Purples"))
-    fig.update_layout(height=350, **_PLOT_LAYOUT)
-    return fig
-
-def plot_roc_comparison(metrics, y_test):
-    fig = go.Figure()
-    colors = ["#667eea","#a78bfa","#22c55e","#f59e0b","#ef4444","#06b6d4","#ec4899"]
-    for i, (name, m) in enumerate(metrics.items()):
-        fpr, tpr, _ = roc_curve(y_test, m["proba"])
-        fig.add_trace(go.Scatter(x=fpr, y=tpr, mode="lines",
-                                  name=f"{name} (AUC={m['AUC']:.3f})",
-                                  line=dict(color=colors[i % len(colors)], width=2)))
-    fig.add_trace(go.Scatter(x=[0,1], y=[0,1], mode="lines", name="Chance",
-                              line=dict(dash="dash", color="#555872", width=1)))
-    fig.update_layout(title="ROC Curve Comparison", xaxis_title="False Positive Rate",
-                      yaxis_title="True Positive Rate", height=450, **_PLOT_LAYOUT)
-    return fig
-
-def plot_pr_comparison(metrics, y_test):
-    fig = go.Figure()
-    colors = ["#667eea","#a78bfa","#22c55e","#f59e0b","#ef4444","#06b6d4","#ec4899"]
-    for i, (name, m) in enumerate(metrics.items()):
-        p, r, _ = precision_recall_curve(y_test, m["proba"])
-        fig.add_trace(go.Scatter(x=r, y=p, mode="lines",
-                                  name=f"{name} (AP={m['AP']:.3f})",
-                                  line=dict(color=colors[i % len(colors)], width=2)))
-    fig.update_layout(title="Precision-Recall Comparison",
-                      xaxis_title="Recall", yaxis_title="Precision",
-                      height=450, **_PLOT_LAYOUT)
-    return fig
 
 
 def get_shap_explainer(model, model_name, X_background):
@@ -856,47 +849,7 @@ with st.sidebar:
 
     st.header("Train / Test Split")
     test_size = st.slider("Test size", 0.1, 0.4, 0.2, 0.05)
-
-    st.header("Models")
-    ALL_MODELS = ["Random Forest","Logistic Regression","XGBoost","LightGBM",
-                  "CatBoost","Gradient Boosting","AdaBoost"]
-    choose_models = st.multiselect("Select models", ALL_MODELS,
-                                   default=["Random Forest","XGBoost","LightGBM"])
-    model_params = {}
-    if choose_models:
-        st.header("Hyperparameters")
-        for mn in choose_models:
-            with st.expander(f"{mn}", expanded=False):
-                if mn == "Random Forest":
-                    model_params["rf_n_estimators"]     = st.slider("n_estimators",50,500,200,50,key="rf_n")
-                    model_params["rf_max_depth"]         = st.slider("max_depth (0=None)",0,30,10,1,key="rf_d")
-                    model_params["rf_min_samples_split"] = st.slider("min_samples_split",2,20,2,1,key="rf_m")
-                elif mn == "Logistic Regression":
-                    model_params["lr_C"]        = st.slider("C",0.01,10.0,1.0,0.1,key="lr_c")
-                    model_params["lr_max_iter"] = st.slider("max_iter",100,2000,1000,100,key="lr_i")
-                    model_params["lr_solver"]   = st.selectbox("solver",["lbfgs","liblinear","saga"],key="lr_s")
-                elif mn == "XGBoost":
-                    model_params["xgb_n_estimators"]  = st.slider("n_estimators",50,500,200,50,key="xgb_n")
-                    model_params["xgb_max_depth"]      = st.slider("max_depth",3,15,6,1,key="xgb_d")
-                    model_params["xgb_learning_rate"]  = st.slider("learning_rate",0.01,0.3,0.1,0.01,key="xgb_l")
-                elif mn == "LightGBM":
-                    model_params["lgb_n_estimators"]  = st.slider("n_estimators",50,500,200,50,key="lgb_n")
-                    model_params["lgb_max_depth"]      = st.slider("max_depth",3,15,6,1,key="lgb_d")
-                    model_params["lgb_learning_rate"]  = st.slider("learning_rate",0.01,0.3,0.1,0.01,key="lgb_l")
-                elif mn == "CatBoost":
-                    model_params["cat_iterations"]    = st.slider("iterations",50,500,200,50,key="cat_i")
-                    model_params["cat_depth"]          = st.slider("depth",3,10,6,1,key="cat_d")
-                    model_params["cat_learning_rate"]  = st.slider("learning_rate",0.01,0.3,0.1,0.01,key="cat_l")
-                elif mn == "Gradient Boosting":
-                    model_params["gb_n_estimators"]  = st.slider("n_estimators",50,500,200,50,key="gb_n")
-                    model_params["gb_max_depth"]      = st.slider("max_depth",3,15,6,1,key="gb_d")
-                    model_params["gb_learning_rate"]  = st.slider("learning_rate",0.01,0.3,0.1,0.01,key="gb_l")
-                elif mn == "AdaBoost":
-                    model_params["ada_n_estimators"]  = st.slider("n_estimators",50,500,200,50,key="ada_n")
-                    model_params["ada_learning_rate"] = st.slider("learning_rate",0.1,2.0,1.0,0.1,key="ada_l")
-
-    st.header("Decision Threshold")
-    threshold = st.slider("Threshold", 0.1, 0.9, 0.5, 0.01)
+    st.caption("The best model is selected automatically — optimized for catching high-risk customers.")
     st.header("Run")
     run_btn = st.button("Run Training", type="primary")
 
@@ -973,14 +926,10 @@ with tab_train:
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=42, stratify=y)
     scaler = StandardScaler().fit(X_train)
-    params = {"models": choose_models, "scaler": scaler, **model_params}
 
     if run_btn:
-        if not choose_models:
-            st.warning("Select at least one model.")
-            st.stop()
-        _progress_bar   = st.progress(0, text="Preparing training...")
-        _status_text    = st.empty()
+        _progress_bar = st.progress(0, text="Preparing training...")
+        _status_text  = st.empty()
 
         def _on_progress(n_done, total, name, done=False):
             pct = int(n_done / total * 100)
@@ -992,72 +941,74 @@ with tab_train:
                 _progress_bar.progress(pct,
                     text=f"Finished {name}  ({n_done} of {total})  —  {pct}%")
 
-        metrics = train_models(X_train, X_test, y_train, y_test, params,
-                               progress_callback=_on_progress)
-        _progress_bar.progress(100, text=f"All {len(choose_models)} models trained — 100%")
+        best_model, best_name, best_recall, best_proba = auto_select_best_model(
+            X_train, X_test, y_train, y_test, progress_callback=_on_progress)
+        _progress_bar.progress(100, text="Model optimized — 100%")
         _status_text.empty()
 
-        # Results table
-        st.markdown("## Model Comparison")
-        comp = pd.DataFrame([
-            {"Model": n, "AUC": f"{m['AUC']:.4f}", "Accuracy": f"{m['Accuracy']:.4f}",
-             "Precision": f"{m['Precision']:.4f}", "Recall": f"{m['Recall']:.4f}",
-             "F1": f"{m['F1']:.4f}"}
-            for n, m in metrics.items()
-        ]).sort_values("AUC", ascending=False).reset_index(drop=True)
-        st.dataframe(comp, use_container_width=True, hide_index=True)
+        threshold = 0.5
+        preds     = (best_proba >= threshold).astype(int)
+        cm        = confusion_matrix(y_test, preds)
+        tn, fp, fn, tp = cm.ravel()
 
-        best_name = max(metrics, key=lambda k: metrics[k]["AUC"])
-        best = metrics[best_name]
-        st.success(f"Best model: **{best_name}** — AUC {best['AUC']:.3f}")
+        # ── Success banner ────────────────────────────────────────────────────
+        st.success(
+            f"Model automatically optimized using **{best_name}** "
+            f"(Recall: {best_recall:.1%}) — Optimized for capturing high-risk customers."
+        )
 
-        col1, col2 = st.columns(2)
-        with col1:
-            st.plotly_chart(plot_roc_comparison(metrics, y_test), use_container_width=True)
-        with col2:
-            st.plotly_chart(plot_pr_comparison(metrics, y_test), use_container_width=True)
-
-        proba = best["proba"]
-        preds = (proba >= threshold).astype(int)
-        cm = confusion_matrix(y_test, preds)
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"### Confusion Matrix (threshold={threshold:.2f})")
-            st.plotly_chart(plot_confusion(cm), use_container_width=True)
-        with col2:
-            st.markdown("### Classification Report")
-            rdf = pd.DataFrame(classification_report(y_test, preds, output_dict=True)).T
-            valid = [r for r in ["0","1","macro avg","weighted avg"] if r in rdf.index]
-            st.dataframe(rdf.loc[valid, ["precision","recall","f1-score","support"]]
-                         .style.format("{:.3f}", subset=["precision","recall","f1-score"]),
-                         use_container_width=True)
-
-        # Feature importance
-        if hasattr(best["model"], "feature_importances_"):
-            imp = pd.DataFrame({"feature": X.columns,
-                                 "importance": best["model"].feature_importances_}
-                               ).sort_values("importance", ascending=False)
-            st.plotly_chart(px.bar(imp.head(20), x="importance", y="feature",
-                                    orientation="h", title=f"Feature Importance — {best_name}"),
-                            use_container_width=True)
-
-        # Business Impact
-        st.markdown("## Business Impact")
-        num_cols = [c for c in df.columns if df[c].dtype in ["float64","int64"]]
+        # ── Revenue at Risk — Business Impact ─────────────────────────────────
+        st.markdown("## Revenue at Risk — Business Impact")
+        num_cols = [c for c in df.columns if df[c].dtype in ["float64", "int64"]]
         def_idx  = next((i for i, c in enumerate(num_cols) if c == DEFAULT_MC), 0)
         mc_col   = st.selectbox("Monthly revenue column", num_cols, index=def_idx)
         monthly  = float(df[mc_col].mean()) if mc_col else 70.0
         ret_cost = st.number_input("Retention cost per customer ($)", value=50.0, step=5.0)
         succ     = st.slider("Retention success rate", 0.0, 1.0, 0.70, 0.05)
-        tn, fp, fn, tp = cm.ravel()
-        net = (tp * succ * monthly * 12) - ((tp + fp) * ret_cost)
+        net           = (tp * succ * monthly * 12) - ((tp + fp) * ret_cost)
+        rev_at_risk   = fn * monthly * 12
         kpi = st.columns(4)
-        kpi[0].metric("TP (saved)", tp)
-        kpi[1].metric("FP (over-treatment)", fp)
-        kpi[2].metric("FN (missed)", fn)
-        kpi[3].metric("Net benefit ($)", f"{net:,.0f}")
+        kpi[0].metric("Customers Flagged",         int(tp + fp))
+        kpi[1].metric("Revenue at Risk ($)",        f"{rev_at_risk:,.0f}")
+        kpi[2].metric("Missed Churners ($)",        f"{fn * monthly * 12:,.0f}")
+        kpi[3].metric("Net Retention Benefit ($)",  f"{net:,.0f}")
 
-        # ── Cohort / Time-series view ─────────────────────────────────────────
+        # ── High-Risk Customers Action List ───────────────────────────────────
+        st.markdown("## High-Risk Customers Action List")
+        risk_labels = np.where(best_proba >= threshold, "High Risk",
+                               np.where(best_proba >= threshold * 0.6, "Medium Risk", "Low Risk"))
+        action_list = pd.DataFrame({
+            "Customer #":        range(1, len(X_test) + 1),
+            "Churn Probability":  (best_proba * 100).round(1),
+            "Risk Level":         risk_labels,
+        }).sort_values("Churn Probability", ascending=False).reset_index(drop=True)
+
+        high_risk_df = action_list[action_list["Risk Level"] == "High Risk"]
+        st.caption(
+            f"{len(high_risk_df)} high-risk customers identified out of "
+            f"{len(action_list)} evaluated"
+        )
+        st.dataframe(
+            high_risk_df.style.background_gradient(
+                subset=["Churn Probability"], cmap="RdYlGn_r"),
+            use_container_width=True, hide_index=True)
+        csv_hr = high_risk_df.to_csv(index=False)
+        st.download_button("Download Action List CSV", csv_hr,
+                            file_name=f"high_risk_customers_{datetime.now().strftime('%Y%m%d')}.csv",
+                            mime="text/csv")
+
+        # ── Top factors driving churn ─────────────────────────────────────────
+        if hasattr(best_model, "feature_importances_"):
+            imp = pd.DataFrame({"feature": X.columns,
+                                 "importance": best_model.feature_importances_}
+                               ).sort_values("importance", ascending=False)
+            st.markdown("### Top Factors Driving Churn")
+            st.plotly_chart(
+                px.bar(imp.head(15), x="importance", y="feature",
+                       orientation="h", title=f"What's driving churn — {best_name}"),
+                use_container_width=True)
+
+        # ── Cohort / Time-series view ──────────────────────────────────────────
         date_col_cands = [c for c in df.columns
                           if any(kw in c.lower() for kw in
                                  ["date","time","month","year","period","signup","join"])]
@@ -1070,21 +1021,19 @@ with tab_train:
             df_coh = df_coh.dropna(subset=["_date"])
             if len(df_coh) > 10:
                 df_coh["_month"] = df_coh["_date"].dt.to_period("M").astype(str)
-                churn_val = df_coh[target_col].value_counts().index[-1]  # minority = churn
-                monthly = (df_coh.groupby("_month")
-                           .apply(lambda g: pd.Series({
-                               "total":   len(g),
-                               "churned": (g[target_col] == churn_val).sum()}))
-                           .reset_index())
-                monthly["churn_rate"] = monthly["churned"] / monthly["total"]
-                fig_coh = px.line(monthly, x="_month", y="churn_rate",
+                churn_val = df_coh[target_col].value_counts().index[-1]
+                monthly_coh = (df_coh.groupby("_month")
+                               .apply(lambda g: pd.Series({
+                                   "total":   len(g),
+                                   "churned": (g[target_col] == churn_val).sum()}))
+                               .reset_index())
+                monthly_coh["churn_rate"] = monthly_coh["churned"] / monthly_coh["total"]
+                fig_coh = px.line(monthly_coh, x="_month", y="churn_rate",
                                   markers=True, title="Monthly Churn Rate Over Time",
                                   labels={"_month": "Month", "churn_rate": "Churn Rate"})
                 fig_coh.update_yaxes(tickformat=".0%")
-                fig_coh.update_layout(height=380, margin=dict(l=10,r=10,t=50,b=10))
+                fig_coh.update_layout(height=380, margin=dict(l=10, r=10, t=50, b=10))
                 st.plotly_chart(fig_coh, use_container_width=True)
-
-                # Cohort retention table
                 df_coh["_cohort"] = df_coh["_date"].dt.to_period("Q").astype(str)
                 cohort_stats = (df_coh.groupby("_cohort")
                                 .apply(lambda g: pd.Series({
@@ -1102,7 +1051,7 @@ with tab_train:
         st.markdown('<p style="font-size:1.5rem;font-weight:700;margin:0.5rem 0">Save Model</p>',
                     unsafe_allow_html=True)
         bundle = {
-            "model":          best["model"],
+            "model":          best_model,
             "model_name":     best_name,
             "scaler":         scaler,
             "label_encoders": encoders,
@@ -1113,15 +1062,16 @@ with tab_train:
             "trained_at":     datetime.now().isoformat(),
             "client_name":    CLIENT_NAME,
             "metrics": {
-                "AUC": best["AUC"], "F1": best["F1"],
-                "Accuracy": best["Accuracy"], "Recall": best["Recall"],
+                "AUC":      roc_auc_score(y_test, best_proba),
+                "F1":       f1_score(y_test, preds, zero_division=0),
+                "Accuracy": accuracy_score(y_test, preds),
+                "Recall":   best_recall,
             },
         }
         st.session_state["model_bundle"] = bundle
-        # Save training sample for SHAP global analysis
         shap_sample = X_train.sample(min(200, len(X_train)), random_state=42)
-        st.session_state["X_train_shap"]  = shap_sample
-        st.session_state["train_df_raw"]  = df          # for cohort view
+        st.session_state["X_train_shap"] = shap_sample
+        st.session_state["train_df_raw"] = df
 
         buf = io.BytesIO()
         pickle.dump(bundle, buf)
@@ -1148,7 +1098,7 @@ with tab_train:
                 ok = _sb_upload(cloud_buf.getvalue(), cloud_fname)
             if ok:
                 st.success(f"Saved to cloud: **{cloud_fname}**")
-                st.session_state.pop("sb_bundle_list", None)  # force refresh
+                st.session_state.pop("sb_bundle_list", None)
 
     else:
         st.info("Configure the sidebar and click **Run Training** to begin.")
