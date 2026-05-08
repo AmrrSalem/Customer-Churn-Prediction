@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>{client_name} &mdash; Churn Alert</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 32px; color: #222; }
+    h2   { color: #d62728; }
+    table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+    th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+    th { background: #f5f5f5; font-weight: 700; }
+    tr:nth-child(even) { background: #fafafa; }
+    p.meta { color: #555; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h2>{client_name} &mdash; Churn Alert</h2>
+  <p class="meta"><strong>{n} high-risk customers</strong> at threshold {threshold_pct}</p>
+  <p class="meta">Generated: {generated_at}</p>
+  {rows}
+</body>
+</html>

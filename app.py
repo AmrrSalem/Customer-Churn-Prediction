@@ -19,6 +19,11 @@ Client config via .streamlit/secrets.toml:
 """
 from pathlib import Path
 import io, hashlib, pickle, smtplib
+
+_TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+def _load_template(name: str) -> str:
+    return (_TEMPLATES_DIR / name).read_text(encoding="utf-8")
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -418,18 +423,13 @@ def send_alert_email(high_risk_df, recipient, smtp_cfg, client_name, threshold):
     subject = f"[{client_name}] Churn Alert: {n} High-Risk Customers"
     rows = high_risk_df.head(25).to_html(index=False, border=0,
                                           float_format=lambda x: f"{x:.1%}" if x < 2 else f"{x:.0f}")
-    html = f"""
-    <div style="font-family:Arial,sans-serif;max-width:700px">
-      <h2 style="color:#d62728">{client_name} — Churn Risk Alert</h2>
-      <p><strong>{n} customers</strong> exceed the risk threshold of
-         <strong>{threshold:.0%}</strong> and require immediate attention.</p>
-      <p style="color:#555">Scored on {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
-      {rows}
-      <hr/>
-      <p style="font-size:11px;color:#888">
-        Sent by {client_name} Churn Dashboard &nbsp;|&nbsp; Do not reply to this message.
-      </p>
-    </div>"""
+    html = _load_template("email_alert.html").format(
+        client_name=client_name,
+        n=n,
+        threshold_pct=f"{threshold:.0%}",
+        scored_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        rows=rows,
+    )
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"]    = smtp_cfg.get("from_addr", smtp_cfg["user"])
@@ -1365,11 +1365,13 @@ with tab_alert:
     # Manual export fallback
     with st.expander("Or export alert as HTML (no SMTP needed)"):
         rows_html = high_risk.to_html(index=False, border=0)
-        html_export = f"""<!DOCTYPE html><html><body>
-        <h2>{CLIENT_NAME} — Churn Alert</h2>
-        <p><strong>{len(high_risk)} high-risk customers</strong> at threshold {score_thr:.0%}</p>
-        <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
-        {rows_html}</body></html>"""
+        html_export = _load_template("churn_alert_export.html").format(
+            client_name=CLIENT_NAME,
+            n=len(high_risk),
+            threshold_pct=f"{score_thr:.0%}",
+            generated_at=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            rows=rows_html,
+        )
         st.download_button("Download Alert as HTML", html_export,
                             file_name="churn_alert.html", mime="text/html")
 
