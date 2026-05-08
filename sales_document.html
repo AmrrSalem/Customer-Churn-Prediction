@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Churn Predictor — Sales Document</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+
+/* ── Reset & Base ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brand:       #667eea;
+  --brand-dark:  #764ba2;
+  --brand-grad:  linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --ink:         #0f1117;
+  --ink-2:       #3d4053;
+  --ink-3:       #6b7280;
+  --surface:     #ffffff;
+  --surface-2:   #f8f9ff;
+  --surface-3:   #eef0ff;
+  --border:      #e2e5f1;
+  --green:       #10b981;
+  --red:         #ef4444;
+  --amber:       #f59e0b;
+  --radius:      12px;
+  --radius-lg:   20px;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 10.5pt;
+  line-height: 1.6;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── Page / Section Breaks ───────────────────────────────────── */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 14mm 16mm;
+  position: relative;
+  page-break-after: always;
+  break-after: page;
+}
+
+.page:last-child { page-break-after: avoid; break-after: avoid; }
+
+@media screen {
+  body { background: #d4d8e8; }
+  .page {
+    margin: 12mm auto;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.18);
+  }
+}
+
+@page { size: A4; margin: 0; }
+
+/* ── Typography ──────────────────────────────────────────────── */
+h1 { font-size: 32pt; font-weight: 900; line-height: 1.05; }
+h2 { font-size: 18pt; font-weight: 800; line-height: 1.15; }
+h3 { font-size: 13pt; font-weight: 700; line-height: 1.2; }
+h4 { font-size: 10pt; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+p  { margin-bottom: 0.75em; }
+
+.label {
+  font-size: 8pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+/* ── Utility ─────────────────────────────────────────────────── */
+.mt-1 { margin-top: 4mm; }
+.mt-2 { margin-top: 8mm; }
+.mt-3 { margin-top: 14mm; }
+.mt-4 { margin-top: 20mm; }
+.mb-1 { margin-bottom: 4mm; }
+.mb-2 { margin-bottom: 8mm; }
+.mb-3 { margin-bottom: 14mm; }
+.flex  { display: flex; }
+.gap-2 { gap: 6mm; }
+.gap-3 { gap: 10mm; }
+.col   { flex: 1; }
+.center { text-align: center; }
+.muted  { color: var(--ink-3); }
+
+/* ── Brand gradient helpers ──────────────────────────────────── */
+.gradient-text {
+  background: var(--brand-grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg {
+  background: var(--brand-grad);
+  color: #fff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE 1 — COVER
+═══════════════════════════════════════════════════════════════ */
+.cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.cover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand-grad);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.logo-name {
+  font-size: 12pt;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cover-badge {
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+  border: 1.5px solid var(--brand);
+  border-radius: 99px;
+  padding: 3px 10px;
+}
+
+.cover-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20mm 0 16mm;
+}
+
+.cover-eyebrow {
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin-bottom: 6mm;
+}
+
+.cover-h1 {
+  font-size: 38pt;
+  font-weight: 900;
+  line-height: 1.0;
+  color: var(--ink);
+  margin-bottom: 6mm;
+}
+
+.cover-sub {
+  font-size: 14pt;
+  font-weight: 400;
+  color: var(--ink-2);
+  max-width: 130mm;
+  line-height: 1.5;
+  margin-bottom: 10mm;
+}
+
+.cover-stats {
+  display: flex;
+  gap: 6mm;
+  margin-top: 4mm;
+}
+
+.cover-stat {
+  border-left: 3px solid var(--brand);
+  padding: 3mm 5mm;
+}
+
+.cover-stat-num {
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.cover-stat-label {
+  font-size: 8pt;
+  color: var(--ink-3);
+  margin-top: 1mm;
+}
+
+.cover-visual {
+  position: relative;
+  height: 52mm;
+  background: var(--surface-2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4mm;
+  padding: 6mm;
+}
+
+.mini-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 4mm 5mm;
+  flex: 1;
+  box-shadow: 0 2px 12px rgba(102,126,234,0.08);
+}
+
+.mini-card-label {
+  font-size: 7pt;
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 2mm;
+}
+
+.mini-card-value {
+  font-size: 15pt;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.mini-card-sub {
+  font-size: 7pt;
+  color: var(--green);
+  font-weight: 600;
+  margin-top: 1mm;
+}
+
+.mini-card-sub.bad { color: var(--red); }
+.mini-card-sub.warn { color: var(--amber); }
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2mm;
+  height: 26mm;
+}
+
+.bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  background: var(--brand-grad);
+  opacity: 0.75;
+  min-width: 6mm;
+}
+
+.bar.highlight { opacity: 1; }
+
+.risk-list { width: 100%; }
+
+.risk-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5mm 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 8pt;
+}
+
+.risk-row:last-child { border-bottom: none; }
+
+.risk-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 3mm;
+  flex-shrink: 0;
+}
+
+.risk-name { flex: 1; font-weight: 500; color: var(--ink-2); }
+
+.risk-pct {
+  font-weight: 700;
+  font-size: 9pt;
+}
+
+.cover-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-top: 1px solid var(--border);
+  padding-top: 4mm;
+}
+
+.cover-footer-tag {
+  font-size: 7.5pt;
+  color: var(--ink-3);
+}
+
+.cover-url {
+  font-size: 8pt;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE 2 — THE PROBLEM
+═══════════════════════════════════════════════════════════════ */
+
+.problem-band {
+  background: var(--brand-grad);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 8mm 10mm;
+  margin-bottom: 8mm;
+}
+
+.problem-band h2 { color: #fff; }
+.problem-band p  { color: rgba(255,255,255,0.88); margin-bottom: 0; }
+
+.stat-trio {
+  display: flex;
+  gap: 5mm;
+  margin: 6mm 0;
+}
+
+.stat-card {
+  flex: 1;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  padding: 5mm;
+  background: var(--surface-2);
+}
+
+.stat-card-num {
+  font-size: 22pt;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 1mm;
+}
+
+.stat-card-desc {
+  font-size: 8.5pt;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+.pain-list { list-style: none; margin: 5mm 0; }
+
+.pain-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 3mm;
+  padding: 3mm 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 9.5pt;
+  color: var(--ink-2);
+}
+
+.pain-list li:last-child { border-bottom: none; }
+
+.pain-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: var(--red);
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-weight: 700;
+}
+
+.quote-block {
+  border-left: 3px solid var(--brand);
+  padding: 4mm 6mm;
+  background: var(--surface-3);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: 6mm 0;
+}
+
+.quote-text {
+  font-size: 11pt;
+  font-style: italic;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.quote-attr {
+  font-size: 8pt;
+  font-weight: 600;
+  color: var(--brand);
+  margin-top: 2mm;
+}
+
+.callout-box {
+  border-radius: var(--radius);
+  border: 1.5px solid var(--brand);
+  background: var(--surface-3);
+  padding: 5mm 7mm;
+  margin: 6mm 0;
+}
+
+.callout-box p { margin-bottom: 0; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE 3 — THE SOLUTION
+═══════════════════════════════════════════════════════════════ */
+
+.section-header { margin-bottom: 7mm; }
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+  margin: 6mm 0;
+}
+
+.step {
+  display: flex;
+  align-items: flex-start;
+  gap: 5mm;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 5mm 6mm;
+  background: var(--surface-2);
+}
+
+.step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--brand-grad);
+  color: #fff;
+  font-size: 14pt;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-body h3 { font-size: 11pt; margin-bottom: 1mm; }
+.step-body p  { font-size: 9pt; color: var(--ink-2); margin: 0; }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4mm;
+  margin: 6mm 0;
+}
+
+.feature-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 5mm;
+  background: var(--surface);
+}
+
+.feature-icon {
+  font-size: 20px;
+  margin-bottom: 2mm;
+  display: block;
+}
+
+.feature-card h3 {
+  font-size: 10.5pt;
+  margin-bottom: 1.5mm;
+}
+
+.feature-card p {
+  font-size: 8.5pt;
+  color: var(--ink-2);
+  margin: 0;
+}
+
+.feature-tag {
+  display: inline-block;
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--surface-3);
+  color: var(--brand);
+  border-radius: 99px;
+  padding: 1.5px 6px;
+  margin-top: 2mm;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE 4 — ROI CALCULATOR
+═══════════════════════════════════════════════════════════════ */
+
+.roi-scenario {
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 7mm 8mm;
+  margin-bottom: 6mm;
+}
+
+.roi-scenario h3 { color: #fff; font-size: 12pt; margin-bottom: 4mm; }
+
+.roi-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2.5mm 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-size: 9.5pt;
+}
+
+.roi-row:last-child { border-bottom: none; }
+.roi-row-label { color: rgba(255,255,255,0.7); }
+.roi-row-value { font-weight: 700; color: #fff; }
+.roi-row-value.green { color: #34d399; }
+.roi-row-value.amber { color: #fbbf24; }
+.roi-row-value.brand { color: #a78bfa; }
+
+.roi-total-row {
+  background: rgba(102,126,234,0.2);
+  border-radius: 8px;
+  padding: 3mm 4mm;
+  margin-top: 3mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.roi-total-label { font-size: 10pt; font-weight: 600; color: rgba(255,255,255,0.9); }
+.roi-total-value { font-size: 16pt; font-weight: 900; color: #34d399; }
+
+.tiers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 4mm;
+  margin-top: 6mm;
+}
+
+.tier-card {
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  padding: 5mm;
+  background: var(--surface-2);
+  position: relative;
+}
+
+.tier-card.featured {
+  border-color: var(--brand);
+  background: var(--surface-3);
+}
+
+.tier-badge {
+  position: absolute;
+  top: -4mm;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--brand-grad);
+  color: #fff;
+  font-size: 7pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 99px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.tier-name {
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 2mm;
+}
+
+.tier-price {
+  font-size: 20pt;
+  font-weight: 900;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 1mm;
+}
+
+.tier-price span {
+  font-size: 10pt;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.tier-desc {
+  font-size: 8pt;
+  color: var(--ink-3);
+  margin-bottom: 3mm;
+  line-height: 1.4;
+}
+
+.tier-list { list-style: none; }
+.tier-list li {
+  font-size: 8.5pt;
+  color: var(--ink-2);
+  padding: 1.5mm 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+}
+.tier-list li:last-child { border-bottom: none; }
+.tier-check { color: var(--green); font-weight: 700; }
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE 5 — PROOF & CTA
+═══════════════════════════════════════════════════════════════ */
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4mm;
+  margin-bottom: 6mm;
+}
+
+.proof-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 5mm;
+  background: var(--surface-2);
+}
+
+.proof-card h4 {
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin-bottom: 2mm;
+}
+
+.proof-card p {
+  font-size: 8.5pt;
+  color: var(--ink-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9pt;
+  margin: 5mm 0;
+}
+
+.comparison-table th {
+  padding: 3mm 4mm;
+  font-size: 8pt;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--surface-2);
+  border-bottom: 2px solid var(--border);
+  text-align: left;
+}
+
+.comparison-table th:not(:first-child) { text-align: center; }
+
+.comparison-table td {
+  padding: 3mm 4mm;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-2);
+}
+
+.comparison-table td:not(:first-child) { text-align: center; }
+
+.comparison-table tr:last-child td { border-bottom: none; }
+
+.check-green { color: var(--green); font-weight: 700; font-size: 11pt; }
+.cross-red   { color: var(--red);   font-weight: 700; font-size: 11pt; }
+.partial     { color: var(--amber); font-weight: 700; font-size: 11pt; }
+
+.col-our { background: rgba(102,126,234,0.05); }
+
+.faq-list { margin: 5mm 0; }
+.faq-item { margin-bottom: 4mm; }
+.faq-q {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 1mm;
+}
+.faq-a {
+  font-size: 8.5pt;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.cta-band {
+  background: var(--brand-grad);
+  border-radius: var(--radius-lg);
+  padding: 8mm 10mm;
+  text-align: center;
+  color: #fff;
+}
+
+.cta-band h2 { color: #fff; font-size: 20pt; margin-bottom: 3mm; }
+.cta-band p  { color: rgba(255,255,255,0.88); max-width: 120mm; margin: 0 auto 5mm; font-size: 10pt; }
+
+.cta-buttons {
+  display: flex;
+  gap: 4mm;
+  justify-content: center;
+}
+
+.btn {
+  display: inline-block;
+  padding: 3mm 8mm;
+  border-radius: 99px;
+  font-size: 10pt;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.btn-white {
+  background: #fff;
+  color: var(--brand-dark);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.5);
+}
+
+.contact-strip {
+  display: flex;
+  justify-content: center;
+  gap: 10mm;
+  margin-top: 5mm;
+  font-size: 8.5pt;
+  color: rgba(255,255,255,0.8);
+}
+
+.contact-strip strong { color: #fff; }
+
+/* ── Page header (pages 2-5) ─────────────────────────────────── */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 3mm;
+  margin-bottom: 7mm;
+}
+
+.page-header-brand { font-size: 9pt; font-weight: 700; color: var(--ink-3); }
+.page-header-section { font-size: 9pt; font-weight: 600; color: var(--brand); }
+
+.page-footer {
+  position: absolute;
+  bottom: 10mm;
+  left: 16mm;
+  right: 16mm;
+  display: flex;
+  justify-content: space-between;
+  font-size: 7.5pt;
+  color: var(--ink-3);
+  border-top: 1px solid var(--border);
+  padding-top: 3mm;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE 1 — COVER
+════════════════════════════════════════════════════════════ -->
+<div class="page cover">
+
+  <div class="cover-header">
+    <div class="logo-mark">
+      <div class="logo-icon">C</div>
+      <span class="logo-name">Churn Predictor</span>
+    </div>
+    <span class="cover-badge">Product Overview &amp; Pricing</span>
+  </div>
+
+  <div class="cover-hero">
+    <div class="cover-eyebrow">AI-Powered Retention Intelligence</div>
+    <h1 class="cover-h1">Stop Losing<br><span class="gradient-text">Customers.</span><br>Start Keeping<br>Revenue.</h1>
+    <p class="cover-sub">The fastest way for SaaS founders to see who's about to leave — and exactly what to do about it — without needing a data team.</p>
+
+    <div class="cover-stats">
+      <div class="cover-stat">
+        <div class="cover-stat-num gradient-text">5–25×</div>
+        <div class="cover-stat-label">cheaper to retain than acquire</div>
+      </div>
+      <div class="cover-stat">
+        <div class="cover-stat-num gradient-text">7</div>
+        <div class="cover-stat-label">ML models, auto-selected</div>
+      </div>
+      <div class="cover-stat">
+        <div class="cover-stat-num gradient-text">∞</div>
+        <div class="cover-stat-label">no data scientist required</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-visual">
+    <div class="mini-card" style="max-width:44mm;">
+      <div class="mini-card-label">Revenue at Risk</div>
+      <div class="mini-card-value">$43,200</div>
+      <div class="mini-card-sub bad">↑ 12% vs last month</div>
+      <div style="margin-top:3mm;">
+        <div class="bar-chart">
+          <div class="bar" style="height:40%;"></div>
+          <div class="bar" style="height:55%;"></div>
+          <div class="bar" style="height:45%;"></div>
+          <div class="bar" style="height:70%;"></div>
+          <div class="bar" style="height:60%;"></div>
+          <div class="bar" style="height:80%;"></div>
+          <div class="bar highlight" style="height:100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mini-card" style="max-width:44mm;">
+      <div class="mini-card-label">High-Risk Customers</div>
+      <div class="mini-card-value" style="color:var(--red);">18</div>
+      <div class="mini-card-sub warn">⚠ Action required</div>
+      <div class="risk-list" style="margin-top:3mm;">
+        <div class="risk-row">
+          <div class="risk-dot" style="background:var(--red);"></div>
+          <div class="risk-name">Acme Corp</div>
+          <div class="risk-pct" style="color:var(--red);">94%</div>
+        </div>
+        <div class="risk-row">
+          <div class="risk-dot" style="background:var(--red);"></div>
+          <div class="risk-name">TechFlow Inc</div>
+          <div class="risk-pct" style="color:var(--red);">87%</div>
+        </div>
+        <div class="risk-row">
+          <div class="risk-dot" style="background:var(--amber);"></div>
+          <div class="risk-name">BuilderCo</div>
+          <div class="risk-pct" style="color:var(--amber);">71%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mini-card" style="max-width:44mm;">
+      <div class="mini-card-label">Net Retention Benefit</div>
+      <div class="mini-card-value" style="color:var(--green);">$13,900</div>
+      <div class="mini-card-sub">↑ Estimated if actioned</div>
+      <div style="margin-top:3mm; font-size:8pt; color:var(--ink-3);">
+        <div style="margin-bottom:1mm;">Model accuracy <strong style="color:var(--ink);">91.4%</strong></div>
+        <div style="margin-bottom:1mm;">Best model <strong style="color:var(--ink);">LightGBM</strong></div>
+        <div>Recall <strong style="color:var(--ink);">88.2%</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cover-footer">
+    <div>
+      <div class="cover-footer-tag">Confidential — Prepared for SaaS Founders</div>
+      <div class="cover-footer-tag">2026 · All rights reserved</div>
+    </div>
+    <div class="cover-url">app-churn-dashboard-by-amrr-salem.streamlit.app</div>
+  </div>
+
+</div><!-- /cover -->
+
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE 2 — THE PROBLEM
+════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="page-header">
+    <span class="page-header-brand">Churn Predictor</span>
+    <span class="page-header-section">The Problem</span>
+  </div>
+
+  <div class="problem-band">
+    <h2>Churn is the silent killer of SaaS growth.</h2>
+    <p style="margin-top:2mm;">It doesn't show up on your dashboard until it's already gone. By the time a customer cancels, it's too late — the decision was made weeks earlier. And most founders are flying completely blind.</p>
+  </div>
+
+  <div class="stat-trio">
+    <div class="stat-card">
+      <div class="stat-card-num gradient-text">67%</div>
+      <div class="stat-card-desc">of churned customers showed clear warning signals at least 30 days before cancelling</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-num gradient-text">5–25×</div>
+      <div class="stat-card-desc">more expensive to acquire a new customer than to retain an existing one</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-num gradient-text">$1.6T</div>
+      <div class="stat-card-desc">lost annually by U.S. businesses due to avoidable customer churn</div>
+    </div>
+  </div>
+
+  <h3 class="mt-2 mb-1">What SaaS founders are stuck doing instead</h3>
+
+  <ul class="pain-list">
+    <li>
+      <span class="pain-icon">✕</span>
+      <span><strong>Gut feeling.</strong> Guessing which customers are unhappy based on support tickets or anecdotal Slack messages — missing the quiet ones who just stop logging in.</span>
+    </li>
+    <li>
+      <span class="pain-icon">✕</span>
+      <span><strong>Reactive outreach.</strong> Only reaching out after a customer files a cancellation. At that point, win-back rates drop below 15%.</span>
+    </li>
+    <li>
+      <span class="pain-icon">✕</span>
+      <span><strong>Spreadsheet triage.</strong> Sorting customers by MRR and manually eyeballing usage metrics — time-consuming, inaccurate, and doesn't scale past 100 accounts.</span>
+    </li>
+    <li>
+      <span class="pain-icon">✕</span>
+      <span><strong>Waiting on a data team.</strong> Hiring or contracting a data scientist for a churn model costs $15–80k and takes 3–6 months to deliver anything useful.</span>
+    </li>
+    <li>
+      <span class="pain-icon">✕</span>
+      <span><strong>No action from the model.</strong> Even when founders get a churn score, there's no guidance on what to do — just a probability number that requires its own interpretation.</span>
+    </li>
+  </ul>
+
+  <div class="quote-block mt-2">
+    <div class="quote-text">"We knew something was off with our churn numbers, but we had no idea which customers were about to leave or why. By the time we noticed, we'd already lost three enterprise accounts in one quarter."</div>
+    <div class="quote-attr">— Common feedback from early-stage SaaS founders</div>
+  </div>
+
+  <div class="callout-box mt-2">
+    <p><strong>The opportunity cost is enormous.</strong> A SaaS business with 500 customers at $300 MRR and 8% monthly churn is losing <strong>~$144,000 per year</strong> to preventable cancellations. Retaining even 30% of those customers covers the tool cost many times over.</p>
+  </div>
+
+  <div class="page-footer">
+    <span>Churn Predictor — Product Overview</span>
+    <span>2 of 5</span>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE 3 — THE SOLUTION & FEATURES
+════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="page-header">
+    <span class="page-header-brand">Churn Predictor</span>
+    <span class="page-header-section">The Solution</span>
+  </div>
+
+  <div class="section-header">
+    <div class="label">How It Works</div>
+    <h2 class="mt-1">From raw data to saved customers<br>in under 5 minutes.</h2>
+    <p class="muted mt-1">No data science degree. No model tuning. No waiting weeks for results. Upload your customer CSV, and the platform does the rest.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Upload your customer data</h3>
+        <p>Drop in a CSV with your customer records — usage metrics, contract type, tenure, monthly spend. Works with Salesforce exports, HubSpot reports, or any spreadsheet. No formatting required.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>The platform trains and selects the best model automatically</h3>
+        <p>Seven ML models run in parallel (LightGBM, XGBoost, Random Forest, and four more). The system picks the best performer for your specific data — optimized for recall to catch the most at-risk customers.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Get your ranked action list — and act on it</h3>
+        <p>Every customer is scored by churn probability and assigned a specific retention action: "Offer annual plan with 20% discount," "Assign dedicated onboarding support," or "Escalate to executive sponsor." Then send an automated email alert to your CS team.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="label mt-3 mb-1">Key Capabilities</div>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🎯</span>
+      <h3>Precision Churn Scoring</h3>
+      <p>Each customer receives a churn probability from 0–100%, ranked from highest to lowest risk. Focus your team's energy on the accounts that matter most.</p>
+      <span class="feature-tag">7 ML Models</span>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">💰</span>
+      <h3>Revenue Impact Calculator</h3>
+      <p>See exactly how much MRR is at risk, what it costs to intervene, and the net retention benefit — so you can justify the tool to your CFO in 30 seconds.</p>
+      <span class="feature-tag">Built-in ROI</span>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">🧠</span>
+      <h3>Explainable AI (SHAP)</h3>
+      <p>Don't just get a score — understand why. Per-customer waterfall charts show exactly which factors are driving each customer toward cancellation.</p>
+      <span class="feature-tag">No Black Box</span>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">📋</span>
+      <h3>Prescriptive Action List</h3>
+      <p>Every at-risk customer gets a specific recommended action based on their risk level, contract type, and tenure. Not predictions — directions.</p>
+      <span class="feature-tag">Rule-Based Logic</span>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">📧</span>
+      <h3>Automated Email Alerts</h3>
+      <p>Send a formatted HTML alert with the top 25 at-risk customers directly to your CS manager or AEs — no dashboard login required to take action.</p>
+      <span class="feature-tag">SMTP / Gmail</span>
+    </div>
+
+    <div class="feature-card">
+      <span class="feature-icon">☁️</span>
+      <h3>Cloud Model Persistence</h3>
+      <p>Save your trained model to the cloud and reload it anytime. Score new customer batches weekly without retraining — the model remembers your data.</p>
+      <span class="feature-tag">Supabase Storage</span>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Churn Predictor — Product Overview</span>
+    <span>3 of 5</span>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE 4 — ROI & PRICING
+════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="page-header">
+    <span class="page-header-brand">Churn Predictor</span>
+    <span class="page-header-section">ROI &amp; Pricing</span>
+  </div>
+
+  <div class="label mb-1">Return on Investment</div>
+  <h2>The math is simple.</h2>
+  <p class="muted mt-1" style="margin-bottom:5mm;">Run the numbers for a typical early-stage SaaS company. Even conservative assumptions show a dramatic return.</p>
+
+  <div class="roi-scenario">
+    <h3>📊 Example: 500-Customer SaaS, $300 MRR Average</h3>
+    <div class="roi-row">
+      <span class="roi-row-label">Active customers</span>
+      <span class="roi-row-value">500</span>
+    </div>
+    <div class="roi-row">
+      <span class="roi-row-label">Average MRR per customer</span>
+      <span class="roi-row-value">$300 / mo</span>
+    </div>
+    <div class="roi-row">
+      <span class="roi-row-label">Monthly churn rate (industry avg)</span>
+      <span class="roi-row-value amber">8% → 40 customers</span>
+    </div>
+    <div class="roi-row">
+      <span class="roi-row-label">Annual revenue at risk</span>
+      <span class="roi-row-value amber">$144,000</span>
+    </div>
+    <div class="roi-row">
+      <span class="roi-row-label">Customers retained with early intervention (30%)</span>
+      <span class="roi-row-value brand">12 customers / mo</span>
+    </div>
+    <div class="roi-row">
+      <span class="roi-row-label">Annual revenue saved</span>
+      <span class="roi-row-value green">$43,200</span>
+    </div>
+    <div class="roi-row">
+      <span class="roi-row-label">Annual tool cost (Growth plan)</span>
+      <span class="roi-row-value" style="color:rgba(255,255,255,0.5);">$2,388</span>
+    </div>
+    <div class="roi-total-row">
+      <span class="roi-total-label">Net annual return</span>
+      <span class="roi-total-value">$40,812 · ROI: 1,709%</span>
+    </div>
+  </div>
+
+  <div class="label mt-3 mb-1">Pricing Plans</div>
+
+  <div class="tiers-grid">
+
+    <div class="tier-card">
+      <div class="tier-name">Starter</div>
+      <div class="tier-price">$99<span>/mo</span></div>
+      <div class="tier-desc">For founders validating churn patterns on a small customer base.</div>
+      <ul class="tier-list">
+        <li><span class="tier-check">✓</span> Up to 250 customers</li>
+        <li><span class="tier-check">✓</span> 3 ML models</li>
+        <li><span class="tier-check">✓</span> Risk scoring &amp; action list</li>
+        <li><span class="tier-check">✓</span> CSV download</li>
+        <li><span class="tier-check">✓</span> 1 user seat</li>
+      </ul>
+    </div>
+
+    <div class="tier-card featured">
+      <div class="tier-badge">Most Popular</div>
+      <div class="tier-name">Growth</div>
+      <div class="tier-price">$199<span>/mo</span></div>
+      <div class="tier-desc">For scaling SaaS teams that need ongoing weekly scoring and alerts.</div>
+      <ul class="tier-list">
+        <li><span class="tier-check">✓</span> Up to 2,000 customers</li>
+        <li><span class="tier-check">✓</span> All 7 ML models</li>
+        <li><span class="tier-check">✓</span> SHAP explainability</li>
+        <li><span class="tier-check">✓</span> Email alert automation</li>
+        <li><span class="tier-check">✓</span> Cloud model storage</li>
+        <li><span class="tier-check">✓</span> ROI calculator</li>
+        <li><span class="tier-check">✓</span> 3 user seats</li>
+      </ul>
+    </div>
+
+    <div class="tier-card">
+      <div class="tier-name">Agency</div>
+      <div class="tier-price">$599<span>/mo</span></div>
+      <div class="tier-desc">White-label the platform and deliver it to your own clients.</div>
+      <ul class="tier-list">
+        <li><span class="tier-check">✓</span> Unlimited customers</li>
+        <li><span class="tier-check">✓</span> White-label branding</li>
+        <li><span class="tier-check">✓</span> Multi-client workspaces</li>
+        <li><span class="tier-check">✓</span> Priority support</li>
+        <li><span class="tier-check">✓</span> Custom SMTP domain</li>
+        <li><span class="tier-check">✓</span> Unlimited seats</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div class="page-footer">
+    <span>Churn Predictor — Product Overview</span>
+    <span>4 of 5</span>
+  </div>
+
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE 5 — COMPARISON, FAQ & CTA
+════════════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="page-header">
+    <span class="page-header-brand">Churn Predictor</span>
+    <span class="page-header-section">Why Us &amp; Next Steps</span>
+  </div>
+
+  <div class="label mb-1">Competitive Comparison</div>
+  <h3 style="margin-bottom:4mm;">How we stack up</h3>
+
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th class="col-our" style="color:var(--brand);">Churn Predictor</th>
+        <th>Hire a Data Scientist</th>
+        <th>Generic BI Tool</th>
+        <th>Spreadsheet Model</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Up and running today</td>
+        <td class="col-our"><span class="check-green">✓</span></td>
+        <td><span class="cross-red">✕</span></td>
+        <td><span class="partial">~</span></td>
+        <td><span class="partial">~</span></td>
+      </tr>
+      <tr>
+        <td>No data science skills needed</td>
+        <td class="col-our"><span class="check-green">✓</span></td>
+        <td><span class="cross-red">✕</span></td>
+        <td><span class="check-green">✓</span></td>
+        <td><span class="cross-red">✕</span></td>
+      </tr>
+      <tr>
+        <td>Prescriptive retention actions</td>
+        <td class="col-our"><span class="check-green">✓</span></td>
+        <td><span class="partial">~</span></td>
+        <td><span class="cross-red">✕</span></td>
+        <td><span class="cross-red">✕</span></td>
+      </tr>
+      <tr>
+        <td>Explainable AI (why each customer)</td>
+        <td class="col-our"><span class="check-green">✓</span></td>
+        <td><span class="partial">~</span></td>
+        <td><span class="cross-red">✕</span></td>
+        <td><span class="cross-red">✕</span></td>
+      </tr>
+      <tr>
+        <td>Built-in ROI / revenue impact calc</td>
+        <td class="col-our"><span class="check-green">✓</span></td>
+        <td><span class="cross-red">✕</span></td>
+        <td><span class="cross-red">✕</span></td>
+        <td><span class="cross-red">✕</span></td>
+      </tr>
+      <tr>
+        <td>Automated CS team email alerts</td>
+        <td class="col-our"><span class="check-green">✓</span></td>
+        <td><span class="cross-red">✕</span></td>
+        <td><span class="cross-red">✕</span></td>
+        <td><span class="cross-red">✕</span></td>
+      </tr>
+      <tr>
+        <td>Cost to get started</td>
+        <td class="col-our" style="color:var(--green); font-weight:700;">$99/mo</td>
+        <td style="color:var(--red); font-weight:700;">$15k–80k</td>
+        <td style="color:var(--amber); font-weight:700;">$500+/mo</td>
+        <td style="color:var(--green); font-weight:700;">$0</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="label mt-3 mb-1">Common Questions</div>
+
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">What data do I need to get started?</div>
+      <div class="faq-a">A CSV with customer records — any combination of contract type, tenure, monthly charges, usage metrics, or support history. The platform handles feature engineering automatically. If you can export from Salesforce, HubSpot, or a spreadsheet, you're ready.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How accurate is the churn prediction?</div>
+      <div class="faq-a">Accuracy depends on your data quality, but typical results land between 88–94% AUC. The system is optimized for recall — it would rather flag a false positive than miss an at-risk customer. You can view full model metrics (AUC, precision, recall, F1) before acting on results.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Do I need to retrain the model every time?</div>
+      <div class="faq-a">No. Train once, save the model to the cloud, then score new customer batches as often as you like — daily, weekly, or monthly. Retraining is recommended every 60–90 days or when your customer mix changes significantly.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is my customer data secure?</div>
+      <div class="faq-a">Data is processed in your session and not stored on our servers. If you use cloud model storage (Supabase), only the trained model parameters are saved — not your raw customer records.</div>
+    </div>
+  </div>
+
+  <div class="cta-band mt-3">
+    <h2>Ready to stop guessing?</h2>
+    <p>See exactly which customers are about to leave and what to do about it — in the next 5 minutes. No setup fees. No data team. No contract.</p>
+    <div class="cta-buttons">
+      <a class="btn btn-white" href="#">Try It Free — Live Demo</a>
+      <a class="btn btn-outline" href="#">Book a 20-Min Walkthrough</a>
+    </div>
+    <div class="contact-strip">
+      <span>Live app: <strong>app-churn-dashboard-by-amrr-salem.streamlit.app</strong></span>
+      <span>GitHub: <strong>github.com/AmrrSalem/Customer-Churn-Prediction</strong></span>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <span>Churn Predictor — Product Overview</span>
+    <span>5 of 5</span>
+  </div>
+
+</div>
+
+</body>
+</html>
