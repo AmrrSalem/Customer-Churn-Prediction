@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amr Salem — CV</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.55;
+      color: #111;
+      background: #fff;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 40px 48px;
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 18px; }
+    .header h1 { font-size: 22pt; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .header .title { font-size: 10.5pt; color: #333; margin-bottom: 6px; }
+    .header .contact { font-size: 9.5pt; color: #444; line-height: 1.8; }
+    .header .contact a { color: #1a0dab; text-decoration: none; }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1.5px solid #bbb; margin: 14px 0; }
+
+    /* ── Section heading ── */
+    h2 {
+      font-size: 10.5pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 10px;
+      margin-top: 2px;
+    }
+
+    /* ── Experience / Project blocks ── */
+    .entry { margin-bottom: 14px; }
+    .entry-header { display: flex; justify-content: space-between; align-items: baseline; }
+    .entry-title { font-weight: 700; font-size: 10.5pt; }
+    .entry-sub { font-size: 10pt; color: #333; margin-bottom: 5px; }
+    .entry-date { font-size: 9.5pt; color: #555; white-space: nowrap; margin-left: 12px; }
+
+    ul { padding-left: 18px; margin-top: 4px; }
+    ul li { margin-bottom: 3px; font-size: 10pt; }
+
+    /* ── Competencies ── */
+    .competency-row { margin-bottom: 5px; font-size: 10pt; }
+    .competency-row span { font-weight: 700; }
+
+    /* ── Math highlight badge ── */
+    .math-badge {
+      display: inline-block;
+      background: #1a0dab;
+      color: #fff;
+      font-size: 8pt;
+      font-weight: 600;
+      border-radius: 3px;
+      padding: 1px 6px;
+      margin-left: 5px;
+      vertical-align: middle;
+      letter-spacing: 0.3px;
+    }
+
+    /* ── Certifications ── */
+    .cert-list { list-style: none; padding: 0; }
+    .cert-list li { margin-bottom: 4px; font-size: 10pt; }
+    .cert-list li::before { content: "• "; font-weight: 700; }
+
+    /* ── Projects grid (2 col on wide) ── */
+    .project-entry { margin-bottom: 16px; }
+    .project-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+    .project-title { font-weight: 700; font-size: 10.5pt; }
+    .project-date { font-size: 9.5pt; color: #555; }
+    .project-stack { font-size: 9pt; color: #444; margin-bottom: 4px; }
+    .project-stack em { font-style: normal; font-weight: 600; color: #1a0dab; }
+
+    @media print {
+      body { padding: 28px 36px; font-size: 10pt; }
+      a { color: inherit !important; text-decoration: none; }
+      .math-badge { background: #333; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════ HEADER ════════════ -->
+<div class="header">
+  <h1>Amr Salem</h1>
+  <div class="title">Data Professional &nbsp;|&nbsp; Software Engineer &nbsp;|&nbsp; Data Scientist (Master's Student)</div>
+  <div class="contact">
+    Alexandria, Egypt &nbsp;|&nbsp; amrr.salem@gmail.com &nbsp;|&nbsp; Mobile: +20 100 753 8587<br>
+    Portfolio: <a href="https://amrrsalem.github.io/">amrrsalem.github.io</a> &nbsp;|&nbsp;
+    GitHub: <a href="https://github.com/amrrsalem">github.com/amrrsalem</a> &nbsp;|&nbsp;
+    LinkedIn: <a href="https://www.linkedin.com/in/amr-salem-76855b120/">linkedin.com/in/amr-salem-76855b120</a> &nbsp;|&nbsp;
+    Medium: <a href="https://medium.com/@amrr.salem">medium.com/@amrr.salem</a>
+  </div>
+</div>
+
+<hr>
+
+<!-- ════════════ PROFESSIONAL SUMMARY ════════════ -->
+<h2>Professional Summary</h2>
+<p style="font-size:10pt;">
+  Results-driven Software Engineer and Data Scientist with 10+ years of experience developing scalable solutions
+  and implementing machine learning models. Currently pursuing a Diploma in Data Science at Cairo University.
+  Strong mathematical foundations in <strong>linear algebra, multivariate calculus, probability theory, and
+  statistical inference</strong> — directly applied to model design, optimization, and interpretability.
+  Expertise in Python, R, SQL, and ML frameworks including TensorFlow, PyTorch, and Scikit-learn.
+  Proven track record of translating complex technical requirements into practical business solutions
+  across telecommunications, healthcare, and e-commerce industries.
+</p>
+
+<hr>
+
+<!-- ════════════ CORE COMPETENCIES ════════════ -->
+<h2>Core Competencies</h2>
+
+<div class="competency-row">
+  <span>Mathematical Foundations <span class="math-badge">MATH</span></span><br>
+  Linear Algebra (matrix decomposition, eigenvalues/eigenvectors, SVD, PCA), Multivariate Calculus
+  (gradient descent, partial derivatives, chain rule for backpropagation), Probability &amp; Statistics
+  (Bayesian inference, MLE, hypothesis testing, distributions), Information Theory (entropy, KL divergence,
+  mutual information), Optimization Theory (convex/non-convex, stochastic gradient methods)
+</div>
+
+<div class="competency-row">
+  <span>Machine Learning &amp; AI:</span>
+  TensorFlow, PyTorch, Scikit-learn, XGBoost, LightGBM, CatBoost, SHAP (model interpretability),
+  Statistical Learning, Data-Centric AI, Predictive Modeling, Deep Learning, Neural Networks,
+  Reinforcement Learning
+</div>
+
+<div class="competency-row">
+  <span>Programming Languages:</span> Python, R, C#, SQL, JavaScript, PHP, Delphi, HTML/CSS
+</div>
+
+<div class="competency-row">
+  <span>Data Science Tools:</span>
+  Jupyter Notebooks, Pandas, NumPy, Matplotlib, Seaborn, Plotly, Streamlit, LaTeX, Experiment Tracking
+</div>
+
+<div class="competency-row">
+  <span>Databases &amp; Data Management:</span>
+  SQL Server, MySQL, SQLite, Entity Framework, Data Modeling, ETL Processes
+</div>
+
+<div class="competency-row">
+  <span>Software Development:</span>
+  .NET Framework, Xamarin.Forms, RESTful APIs, Git, Agile Methodology, SDLC
+</div>
+
+<div class="competency-row">
+  <span>Cloud &amp; Infrastructure:</span>
+  Supabase, Software Infrastructure, API Integration, Cross-Platform Development
+</div>
+
+<div class="competency-row">
+  <span>Business Intelligence:</span>
+  Data Analysis, Business Analysis, Hypothesis Testing, A/B Testing, Statistical Analysis
+</div>
+
+<hr>
+
+<!-- ════════════ PROFESSIONAL EXPERIENCE ════════════ -->
+<h2>Professional Experience</h2>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">Software Engineer</span>
+    <span class="entry-date">November 2022 – September 2024</span>
+  </div>
+  <div class="entry-sub"><strong>Someday</strong> | Egypt</div>
+  <ul>
+    <li>Developed and maintained company website using modern web technologies, improving user experience by 40%</li>
+    <li>Performed business analysis using Python and SQL to extract insights from data, enhancing product ownership decisions</li>
+    <li>Analyzed customer data patterns to identify opportunities for business optimization and growth</li>
+    <li>Coordinated with cross-functional teams and freelancers to deliver technical solutions aligned with business objectives</li>
+    <li>Implemented data-driven solutions to solve complex technical challenges and improve operational efficiency</li>
+  </ul>
+</div>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">.NET Developer</span>
+    <span class="entry-date">March 2020 – September 2021</span>
+  </div>
+  <div class="entry-sub"><strong>Gomla Market Company</strong> | Alexandria, Egypt</div>
+  <ul>
+    <li>Designed and developed cross-platform mobile application for PDAs using C#, .NET Framework, and Xamarin.Forms</li>
+    <li>Built RESTful API in C# for data synchronization, authentication, and business logic implementation</li>
+    <li>Implemented offline-first architecture using SQLite database with Entity Framework ORM</li>
+    <li>Translated business requirements into functional software modules for Operations Team</li>
+    <li>Achieved 95% user adoption rate through user-centered design and stakeholder collaboration</li>
+  </ul>
+</div>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">Lead Software Developer</span>
+    <span class="entry-date">December 2018 – October 2019</span>
+  </div>
+  <div class="entry-sub"><strong>Yallabrand</strong> | Alexandria, Egypt</div>
+  <ul>
+    <li>Led development team in integrating custom PHP features into PrestaShop CMS platform</li>
+    <li>Designed and implemented advanced database filters improving backend efficiency by 35%</li>
+    <li>Managed third-party vendor relationships and coordinated technical implementations</li>
+    <li>Optimized database queries and improved system performance through code refactoring</li>
+    <li>Mentored junior developers and conducted code reviews to maintain quality standards</li>
+  </ul>
+</div>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">Site Engineer</span>
+    <span class="entry-date">January 2016 – July 2018</span>
+  </div>
+  <div class="entry-sub"><strong>Orascom Telecom</strong> | Alexandria, Egypt</div>
+  <ul>
+    <li>Managed technical operations for telecommunication infrastructure and radio systems</li>
+    <li>Led team of 10+ technicians and support staff in maintaining network availability of 99.9%</li>
+    <li>Implemented preventive maintenance procedures reducing system downtime by 25%</li>
+    <li>Coordinated emergency response for critical infrastructure issues</li>
+    <li>Analyzed network performance data to identify optimization opportunities</li>
+  </ul>
+</div>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">Web Development Trainer</span>
+    <span class="entry-date">November 2017 – April 2018</span>
+  </div>
+  <div class="entry-sub"><strong>Engage Training Academy</strong> | Alexandria, Egypt</div>
+  <ul>
+    <li>Delivered technical training on C#, SQL, MVC, HTML, CSS, JavaScript, jQuery, and Bootstrap</li>
+    <li>Developed comprehensive training materials and curriculum for web development courses</li>
+    <li>Trained 50+ students in full-stack web development technologies</li>
+    <li>Achieved 90% student satisfaction rate through hands-on teaching methodology</li>
+  </ul>
+</div>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">Technical Support Engineer</span>
+    <span class="entry-date">May 2014 – September 2015</span>
+  </div>
+  <div class="entry-sub"><strong>Raya Contact Center</strong> | Cairo, Egypt</div>
+  <ul>
+    <li>Provided Level 2 technical support for networking, web hosting, and domain management issues</li>
+    <li>Resolved average of 50 technical tickets daily with 95% customer satisfaction rate</li>
+    <li>Created technical documentation and knowledge base articles for common issues</li>
+    <li>Collaborated with development team to identify and resolve software bugs</li>
+  </ul>
+</div>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">Software Engineer</span>
+    <span class="entry-date">May 2013 – October 2013</span>
+  </div>
+  <div class="entry-sub"><strong>MILLENSYS Healthcare Technology</strong> | Alexandria, Egypt</div>
+  <ul>
+    <li>Developed DICOM medical imaging viewer using Delphi programming language</li>
+    <li>Designed and implemented user interface for healthcare imaging software</li>
+    <li>Optimized application performance through multi-threading implementation</li>
+    <li>Collaborated with healthcare professionals to ensure compliance with medical standards</li>
+  </ul>
+</div>
+
+<hr>
+
+<!-- ════════════ EDUCATION ════════════ -->
+<h2>Education</h2>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">Diploma in Data Science</span>
+    <span class="entry-date">January 2024 – June 2026 (Expected)</span>
+  </div>
+  <div class="entry-sub">
+    <strong>Cairo University</strong><br>
+    Coursework: Machine Learning, Deep Learning, Statistical Analysis, Big Data, Data Mining
+  </div>
+</div>
+
+<div class="entry">
+  <div class="entry-header">
+    <span class="entry-title">Bachelor of Science in Electrical and Electronics Engineering</span>
+    <span class="entry-date">2006 – 2012</span>
+  </div>
+  <div class="entry-sub">
+    <strong>Alexandria University</strong><br>
+    Relevant Coursework: Signal Processing (Fourier &amp; Laplace transforms), Control Systems (differential equations,
+    state-space analysis), Linear Algebra, Calculus, Probability &amp; Random Processes
+  </div>
+</div>
+
+<hr>
+
+<!-- ════════════ CERTIFICATIONS ════════════ -->
+<h2>Certifications</h2>
+<ul class="cert-list">
+  <li><strong>Linear Algebra for Machine Learning and Data Science</strong> <span class="math-badge">MATH</span> — Coursera &nbsp;|&nbsp; Matrix operations, eigendecomposition, SVD applied to ML</li>
+  <li><strong>Calculus for Machine Learning and Data Science</strong> <span class="math-badge">MATH</span> — Coursera &nbsp;|&nbsp; Gradient descent, partial derivatives, optimization theory</li>
+  <li><strong>Foundation of Generative AI</strong> — IBM</li>
+  <li><strong>What is Data Science?</strong> — IBM</li>
+  <li><strong>Data Scientist Professional Certificate</strong> — Udacity</li>
+</ul>
+
+<hr>
+
+<!-- ════════════ TECHNICAL PROJECTS ════════════ -->
+<h2>Technical Projects</h2>
+
+<!-- Project 1 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Customer Churn Prediction Platform</span>
+    <span class="project-date">Jun 2025 – Mar 2026 &nbsp;(10 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>Python · XGBoost · LightGBM · CatBoost · SHAP · Scikit-learn · Streamlit · Supabase</em>
+    &nbsp;|&nbsp; <a href="https://app-churn-dashboard-by-amrr-salem.streamlit.app" style="font-size:9pt;">Live Demo ↗</a>
+  </div>
+  <ul>
+    <li>Designed a 7-model ML pipeline (Random Forest, XGBoost, LightGBM, CatBoost, Gradient Boosting, AdaBoost, Logistic Regression) with automated selection based on <strong>Recall maximization</strong>, directly minimizing asymmetric misclassification cost C(FN) &gt;&gt; C(FP).</li>
+    <li>Applied <strong>SHAP (SHapley Additive exPlanations)</strong> — grounded in cooperative game theory — with a three-tier explainer fallback (TreeExplainer → LinearExplainer → KernelExplainer), delivering per-customer waterfall charts and global feature-importance rankings via φ<sub>i</sub> = Σ coalition weights × marginal contributions.</li>
+    <li>Engineered 8+ domain features including charge-per-tenure ratios, contract risk ordinal scores, and tenure cohort bins — reducing model variance by regularizing sparse continuous inputs.</li>
+    <li>Implemented Supabase cloud model storage for serialized pipeline bundles (.pkl), enabling multi-session persistence and zero-retraining inference on new data.</li>
+    <li>Delivered rule-based retention action engine mapping (risk probability × contract type × tenure) → prescriptive retention action, with SMTP HTML email alerts for high-risk cohorts (P(churn) &gt; 0.70).</li>
+  </ul>
+</div>
+
+<!-- Project 2 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Supply Chain Optimization Dashboard</span>
+    <span class="project-date">Jun 2025 – Mar 2026 &nbsp;(10 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>Python · Streamlit · Pandas · Plotly · NumPy</em>
+    &nbsp;|&nbsp; <a href="https://supply-chain-inventory-optimization-by-amrr-salem.streamlit.app" style="font-size:9pt;">Live Demo ↗</a>
+  </div>
+  <ul>
+    <li>Built an interactive inventory optimization dashboard applying <strong>operations research methods</strong> (EOQ model, safety-stock calculations using σ demand × z-score) to minimize total holding + ordering costs.</li>
+    <li>Designed a demand forecasting module using moving-average smoothing and <strong>exponential weighting</strong> (α-parameterized EWMA) to adapt to non-stationary supply signals.</li>
+    <li>Generated automated executive summary reports surfacing KPIs: stockout rate, fill rate, inventory turnover, and carrying-cost-to-revenue ratio, deployed live via Streamlit Community Cloud.</li>
+  </ul>
+</div>
+
+<!-- Project 3 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Sales Analytics &amp; Business Intelligence Dashboard</span>
+    <span class="project-date">Jun 2025 – Mar 2026 &nbsp;(10 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>Python · Streamlit · Pandas · Plotly</em>
+    &nbsp;|&nbsp; <a href="https://retail-performance-analysis-by-amrr-salem.streamlit.app" style="font-size:9pt;">Live Demo ↗</a>
+  </div>
+  <ul>
+    <li>Created a multi-dimensional sales BI dashboard with <strong>cohort retention analysis</strong>, funnel conversion metrics, and time-series decomposition (trend + seasonality + residual) for executive reporting.</li>
+    <li>Applied <strong>statistical hypothesis testing</strong> (two-sample t-tests, chi-squared tests) to validate segment performance differences, ensuring business decisions rest on p &lt; 0.05 significance thresholds.</li>
+    <li>Implemented dynamic Plotly visualizations (waterfall charts, pareto distributions, scatter regression overlays) enabling non-technical stakeholders to explore data without SQL expertise.</li>
+  </ul>
+</div>
+
+<!-- Project 4 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Sentiment Analysis Tool — NLP + REST API</span>
+    <span class="project-date">Jun 2025 – Mar 2026 &nbsp;(10 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>Python · Scikit-learn / Transformers · REST API · Streamlit · Pandas</em>
+    &nbsp;|&nbsp; <a href="https://sentiment-analysis-tool-by-amrr-salem.streamlit.app" style="font-size:9pt;">Live Demo ↗</a>
+  </div>
+  <ul>
+    <li>Designed an end-to-end NLP pipeline: tokenization → TF-IDF / embedding vectorization → classifier training, leveraging <strong>information-theoretic feature selection</strong> (mutual information I(X;Y) = Σ p(x,y) log p(x,y)/p(x)p(y)) to rank predictive text features.</li>
+    <li>Evaluated models using <strong>ROC-AUC, precision-recall curves, and F-β scores</strong>, tuning the β parameter to reflect asymmetric costs between false positives and false negatives in sentiment labeling.</li>
+    <li>Served the trained pipeline via a decoupled REST API, supporting real-time batch inference and enabling downstream system integration without redeploying the Streamlit UI.</li>
+  </ul>
+</div>
+
+<!-- Project 5 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Recommendation Engine</span>
+    <span class="project-date">May 2025 – Mar 2026 &nbsp;(11 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>Python · Streamlit · Scikit-learn · Pandas · NumPy</em></div>
+  <ul>
+    <li>Implemented collaborative filtering via <strong>matrix factorization</strong> — decomposing the user-item interaction matrix R ≈ UV<sup>T</sup> using truncated SVD — to surface latent preference dimensions.</li>
+    <li>Combined with content-based filtering using <strong>cosine similarity</strong> on TF-IDF item-feature vectors, applying a linear blending weight α to balance exploration vs. exploitation in recommendations.</li>
+    <li>Exposed similarity parameters and filter controls via an interactive Streamlit interface, enabling tuning of recommendation behavior without code changes.</li>
+  </ul>
+</div>
+
+<!-- Project 6 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Reinforcement Learning Recommendation System (DS540)</span>
+    <span class="project-date">Sep 2025 – Nov 2025 &nbsp;(3 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>Python · PyTorch · Jupyter Notebook · Streamlit</em></div>
+  <ul>
+    <li>Modelled sequential recommendation as a <strong>Markov Decision Process</strong> (S, A, P, R, γ) where the state encodes user history and the policy network π<sub>θ</sub>(a|s) outputs item selection probabilities.</li>
+    <li>Trained the policy network in <strong>PyTorch</strong> with experience replay (uniform and prioritized sampling) and a target network updated via Polyak averaging, stabilizing the Q-function approximation.</li>
+    <li>Benchmarked the RL agent against collaborative filtering and popularity baselines, achieving measurable improvement in simulated cumulative discounted reward Σ γ<sup>t</sup>r<sub>t</sub>.</li>
+  </ul>
+</div>
+
+<!-- Project 7 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Production-Grade Data Science Package (dsnd_p02)</span>
+    <span class="project-date">May 2025 – Aug 2025 &nbsp;(4 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>Python · SQLite · pytest · setuptools</em></div>
+  <ul>
+    <li>Architected a modular, pip-installable Python package applying software engineering best practices: separation of concerns, clean public API, and <strong>SQLite-backed data persistence</strong> with schema migrations.</li>
+    <li>Wrote structured unit tests validating statistical transforms (mean, variance, normalization) and database CRUD operations, ensuring reproducibility of all analytical outputs.</li>
+  </ul>
+</div>
+
+<!-- Project 8 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Stack Overflow Developer Survey — EDA &amp; Statistical Insights</span>
+    <span class="project-date">Mar 2025 – Mar 2026 &nbsp;(12 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>Python · Pandas · Matplotlib · Seaborn · SciPy · Jupyter Notebook</em></div>
+  <ul>
+    <li>Performed large-scale EDA on Stack Overflow Annual Developer Survey data, applying <strong>descriptive statistics</strong> (mean, median, IQR, skewness, kurtosis) and distribution fitting to compensation data across roles and geographies.</li>
+    <li>Used <strong>non-parametric statistical tests</strong> (Mann-Whitney U, Kruskal-Wallis H-test) to compare salary distributions across developer types, validating insights where normality assumptions were violated.</li>
+    <li>Produced annotated visualizations identifying salary premium associated with programming language, experience quantile, and remote-work status.</li>
+  </ul>
+</div>
+
+<!-- Project 9 -->
+<div class="project-entry">
+  <div class="project-header">
+    <span class="project-title">Dental Clinic Management System</span>
+    <span class="project-date">Nov 2024 – Mar 2026 &nbsp;(17 months)</span>
+  </div>
+  <div class="project-stack">Stack: <em>T-SQL · SQL Server</em></div>
+  <ul>
+    <li>Designed a normalized relational schema (3NF) for a dental clinic covering patient records, appointments, treatment history, and billing — eliminating transitive dependencies and enforcing referential integrity via foreign key constraints.</li>
+    <li>Wrote T-SQL stored procedures for appointment conflict detection (set-based interval overlap logic), invoice generation, and patient lookup, encapsulating business rules at the database layer.</li>
+    <li>Implemented indexing strategy (clustered + non-clustered) on high-cardinality query paths, reducing average query execution time for appointment lookups.</li>
+  </ul>
+</div>
+
+<hr>
+
+<!-- ════════════ ADDITIONAL SKILLS ════════════ -->
+<h2>Additional Skills</h2>
+<div class="competency-row">
+  <span>Mathematical &amp; Analytical Skills <span class="math-badge">MATH</span></span>
+  Experimental Design, Bayesian Hypothesis Testing, Reproducible Research, Data Visualization,
+  Probability Distributions (Gaussian, Binomial, Poisson, Beta), Regression Analysis (OLS, Ridge, Lasso),
+  Dimensionality Reduction (PCA via eigendecomposition, t-SNE)
+</div>
+<div class="competency-row">
+  <span>Soft Skills:</span> Team Leadership, Cross-functional Collaboration, Technical Documentation, Stakeholder Management
+</div>
+<div class="competency-row">
+  <span>Languages:</span> Arabic (Native), English (Professional Working Proficiency)
+</div>
+
+</body>
+</html>
